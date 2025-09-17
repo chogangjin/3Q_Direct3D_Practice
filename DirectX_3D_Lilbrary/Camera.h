@@ -24,6 +24,7 @@ public:
 	void Reset();
 	void Update(float elapsedTime);
 	void GetViewMatrix(Matrix& out);
+	Vector3 GetCameraPosition() { return m_Position; }
 	void AddInputVector(const Vector3& input);
 	void SetSpeed(float speed) { m_MoveSpeed = speed; }
 	void AddPitch(float value);

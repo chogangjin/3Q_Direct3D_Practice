@@ -27,6 +27,7 @@ public :
 	ComPtr<ID3D11DepthStencilView> m_pDepthStencilView = nullptr; // Depth/Stencil view
 	ComPtr<ID3D11DepthStencilState> m_pDepthStencilState = nullptr;
 	ComPtr<ID3D11DepthStencilState> m_pSkyBoxDepthStencilState = nullptr; // Depth/Stencil state
+	ComPtr<ID3D11RasterizerState> m_pRasterizerState = nullptr;
 	ComPtr<ID3D11BlendState> m_pAlphaBlendState = nullptr;
 
 	//렌더링 파이프라인에 사용되는 정보들 

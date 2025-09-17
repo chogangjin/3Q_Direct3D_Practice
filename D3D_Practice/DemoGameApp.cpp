@@ -128,6 +128,7 @@ void DemoGameApp::Render()
 
 	
 	m_pDeviceContext->OMSetDepthStencilState(m_pSkyBoxDepthStencilState.Get(), 0);
+	m_pDeviceContext->RSSetState(m_pRasterizerState.Get());
 	m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
 	m_pDeviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_VertexBufferStride, &m_VertexBufferOffset);
 	m_pDeviceContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
@@ -136,9 +137,18 @@ void DemoGameApp::Render()
 	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());		// ConstantBuffer 초기화
 	m_pDeviceContext->PSSetShader(m_pSkyBoxPixelShader.Get(), nullptr, 0);
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-	m_pDeviceContext->PSSetShaderResources(0, 1, m_pSkyBoxShaderResourceView.GetAddressOf());
+	m_pDeviceContext->PSSetShaderResources(1, 1, m_pSkyBoxShaderResourceView.GetAddressOf());
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
+	
+	
+	cbuffer.World = XMMatrixTranspose(DirectX::SimpleMath::Matrix::CreateTranslation(m_Camera.GetCameraPosition()));
+ 	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
+	cbuffer.Projection = XMMatrixTranspose(m_ProjectionMatrix);
+	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
+	
+	m_pDeviceContext->OMSetDepthStencilState(nullptr, 0);
+	m_pDeviceContext->RSSetState(nullptr);
 
 	//ImGUI 사용
 	ImGuiBeginDraw();
@@ -292,6 +302,13 @@ bool DemoGameApp::InitD3D()
 	skyDSD.DepthFunc = D3D11_COMPARISON_LESS_EQUAL; // 깊이데이터를 기존 깊이 데이터와 비교, 원본 데이터가 대상데이터보다 작거나 같으면 비교 통과
 	m_pDevice->CreateDepthStencilState(&skyDSD, m_pSkyBoxDepthStencilState.GetAddressOf());
 
+	// Rasterizer State
+	D3D11_RASTERIZER_DESC rasterizerDesc = {};
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.FrontCounterClockwise = true;
+	rasterizerDesc.DepthClipEnable = true;
+	m_pDevice->CreateRasterizerState(&rasterizerDesc, m_pRasterizerState.GetAddressOf());
 
 	D3D11_BLEND_DESC blendDesc = {};
 	blendDesc.AlphaToCoverageEnable = false;
