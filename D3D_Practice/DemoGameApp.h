@@ -93,7 +93,6 @@ public :
 	void UnInitScene();
 
 	void SetCube();
-	void SetSkyBox();
 
 	bool InitImGui();
 	void UnInitImGui();

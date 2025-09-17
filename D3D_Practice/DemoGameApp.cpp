@@ -423,6 +423,7 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreateVertexShader(vertexShaderBufffer->GetBufferPointer(), // 
 		vertexShaderBufffer->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf()));
 
+	// 스카이박스가 사용할 버텍스 세이더 생성 및 스카이박스용 버텍스 셰이더 버퍼와 바인딩
 	ComPtr<ID3DBlob> skyboxVertexShaderBuffer = nullptr;
 	HR_T(CompileShaderFromFile(L"SkyboxVertexShader.hlsl", "main", "vs_4_0", skyboxVertexShaderBuffer.GetAddressOf()));
 	HR_T(m_pDevice->CreateVertexShader(skyboxVertexShaderBuffer->GetBufferPointer(),
@@ -443,6 +444,7 @@ void DemoGameApp::SetCube()
 		vertexShaderBufffer->GetBufferSize(),
 		m_pInputLayout.GetAddressOf()));
 
+	//스카이 박스용 InputLayout 생성
 	D3D11_INPUT_ELEMENT_DESC texturecubeLayout[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,0, D3D11_INPUT_PER_VERTEX_DATA, 0}
@@ -476,25 +478,6 @@ void DemoGameApp::SetCube()
 
 			//뒷면
 			20,21,22, 20,22,23,
-
-		// 스카이박스
-			//위
-			//24,25,26, 24,26,27,
-
-			////아래
-			//28,29,30, 28,30,31,
-
-			////왼쪽
-			//32,33,34, 32,34,35,
-
-			////오른쪽
-			//36,37,38, 36,38,39,
-
-			////뒤
-			//40,41,42, 40,42,43,
-
-			////앞
-			//44,45,46, 44,46,47
 	};
 	m_Indices = ARRAYSIZE(indices);
 
@@ -551,17 +534,6 @@ void DemoGameApp::SetCube()
 	// 상수버퍼에 쓸 월드 행렬 초기화
 	m_WorldMatrix1 = DirectX::XMMatrixIdentity();
 
-	//카메라의 벡터 구하기
-	m_eye = { 0.0f, 1.0f, -5.0f, 0.0f };
-	m_to = { 0.0f, 0.0f, 1.0f, 0.0f };
-	m_up = { 0.0f, 1.0f, 0.0f, 0.0f };
-
-	DirectX::XMVECTOR eye = DirectX::XMVectorSet(m_eye.x, m_eye.y, m_eye.z, m_eye.w); // 카메라의 위치
-	DirectX::XMVECTOR to = DirectX::XMVectorSet(m_to.x, m_to.y, m_to.z, m_to.w);   // 카메라가 바라보는 방향
-	DirectX::XMVECTOR up = DirectX::XMVectorSet(m_up.x, m_up.y, m_up.z, m_up.w);   // 카메라의 Up벡터
-
-	//m_ViewMatrix = DirectX::XMMatrixLookToLH(eye, to, up); // 세 벡터를 가지고 카메라의 행렬 만듦
-
 	fovWidht = m_Width;
 	fovHeight = m_Height;
 	FieldOfView = 90;
@@ -570,55 +542,6 @@ void DemoGameApp::SetCube()
 
 	m_DirectionalLight[0] = Vector4{ 0.0f, 0.0f, -1.0f, 1.0f };
 	m_LightColor[0] = { 1.0f, 1.0f, 1.0f, 1.0f };
-}
-
-void DemoGameApp::SetSkyBox()
-{
-	HRESULT hr;
-
-	ID3DBlob* errormessage = nullptr;
-
-	Vertex skyboxVertices[] =
-	{
-	//스카이박스
-		//Y+방향
-		Vertex{Vector3{-1.0f, 1.0f,  1.0f}}, // 0
-		Vertex{Vector3{-1.0f, 1.0f, -1.0f}}, // 1
-		Vertex{Vector3{ 1.0f, 1.0f, -1.0f}}, // 2
-		Vertex{Vector3{ 1.0f, 1.0f,  1.0f}}, // 3 
-
-		//Y-방향
-		Vertex{Vector3{-1.0f, -1.0f, -1.0f}}, // 4
-		Vertex{Vector3{-1.0f, -1.0f,  1.0f}}, // 5
-		Vertex{Vector3{ 1.0f, -1.0f,  1.0f}}, // 6
-		Vertex{Vector3{ 1.0f, -1.0f, -1.0f}}, // 7
-
-		//X- 방향
-		Vertex{Vector3{-1.0f,  1.0f,  1.0f}}, // 8
-		Vertex{Vector3{-1.0f, -1.0f,  1.0f}}, // 9
-		Vertex{Vector3{-1.0f, -1.0f, -1.0f}}, // 10
-		Vertex{Vector3{-1.0f,  1.0f, -1.0f}}, // 11
-
-		//X+ 방향
-		Vertex{Vector3{ 1.0f,  1.0f, -1.0f}}, // 12
-		Vertex{Vector3{ 1.0f, -1.0f, -1.0f}}, // 13
-		Vertex{Vector3{ 1.0f, -1.0f,  1.0f}}, // 14
-		Vertex{Vector3{ 1.0f,  1.0f,  1.0f}}, // 15
-
-		//Z- 방향
-		Vertex{Vector3{-1.0f,  1.0f, -1.0f}}, // 16
-		Vertex{Vector3{-1.0f, -1.0f, -1.0f}}, // 17
-		Vertex{Vector3{ 1.0f, -1.0f, -1.0f}}, // 18
-		Vertex{Vector3{ 1.0f,  1.0f, -1.0f}}, // 19
-
-		//Z+방향
-		Vertex{Vector3{ 1.0f,  1.0f,  1.0f}}, // 20
-		Vertex{Vector3{ 1.0f, -1.0f,  1.0f}}, // 21
-		Vertex{Vector3{-1.0f, -1.0f,  1.0f}}, // 22
-		Vertex{Vector3{-1.0f,  1.0f,  1.0f}}, // 23
-	};
-
-
 }
 
 bool DemoGameApp::InitImGui()
