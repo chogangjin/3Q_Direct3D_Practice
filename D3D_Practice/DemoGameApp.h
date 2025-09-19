@@ -44,7 +44,6 @@ public :
 	ComPtr<ID3D11ShaderResourceView> m_pSkyBoxShaderResourceView = nullptr;
 	ComPtr<ID3D11SamplerState> m_pSamplerState = nullptr; // Sampler State
 
-
 	UINT m_VertexBufferStride = 0; // 버텍스 한개의 크기
 	UINT m_VertexBufferOffset = 0; // 버텍스 한개에 대한 설정
 	UINT m_VertexCount = 0; // 버텍스 개수
@@ -54,20 +53,13 @@ public :
 	Vector3 m_Roataion1{ 0,0,0 };
 	Vector3 m_Translation1{ 0,0,0 };
 	
-	Vector4 m_eye;
-	Vector4 m_to;
-	Vector4 m_up;
-
-	Matrix m_WorldMatrix1;
-	Matrix m_WorldMatrix2;
-	Matrix m_WorldMatrix3;
+	Matrix m_WorldMatrix = DirectX::XMMatrixIdentity();
 	Matrix m_ViewMatrix; // 카메라 매트릭스
 	Matrix m_ProjectionMatrix;
 
 	Vector4 m_DirectionalLight[2];
 	Vector4	m_LightColor[2];
 	float	m_LightPower = 1.0f;
-	
 
 	float fovWidht;
 	float fovHeight;

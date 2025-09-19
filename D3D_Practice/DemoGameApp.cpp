@@ -78,7 +78,7 @@ void DemoGameApp::OnUpdate()
 	DirectX::XMMATRIX translation1 = DirectX::XMMatrixTranslation(m_Translation1.x, m_Translation1.y, m_Translation1.z);
 	DirectX::XMMATRIX rotation1 = DirectX::XMMatrixRotationRollPitchYaw(m_Roataion1.x, m_Roataion1.y, m_Roataion1.z);
 	DirectX::XMMATRIX scale1 = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z);
-	m_WorldMatrix1 = scale1 * rotation1 * translation1;
+	m_WorldMatrix = scale1 * rotation1 * translation1;
 	
 	m_Camera.GetViewMatrix(m_ViewMatrix);
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
@@ -117,7 +117,7 @@ void DemoGameApp::Render()
 
 	// 상수버퍼로 도형 생성
 	ConstantBuffer cbuffer = {};
-	cbuffer.World = XMMatrixTranspose(m_WorldMatrix1);
+	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
 	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
 	cbuffer.Projection = XMMatrixTranspose(m_ProjectionMatrix);
 	cbuffer.DirectionalLight[0] = m_DirectionalLight[0];
@@ -129,7 +129,7 @@ void DemoGameApp::Render()
 	
 	m_pDeviceContext->OMSetDepthStencilState(m_pSkyBoxDepthStencilState.Get(), 0);
 	m_pDeviceContext->RSSetState(m_pRasterizerState.Get());
-	m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
+	//m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
 	m_pDeviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_VertexBufferStride, &m_VertexBufferOffset);
 	m_pDeviceContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
 	m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);	// Index Buffer에 인덱스들 값 설정
@@ -153,19 +153,20 @@ void DemoGameApp::Render()
 	//ImGUI 사용
 	ImGuiBeginDraw();
 	ImGui::Begin("Solar");
+	ImGui::SeparatorText("Sun");
 	ImGui::DragFloat3("Sun Position", &m_Translation1.x, 1.0f, -100.0f, 100.0f);
 	ImGui::DragFloat3("Sun Rotation", &m_Roataion1.x, 1.0f, -360.0f, 360.0f);
 	ImGui::DragFloat3("Sun Scale", &m_Scale1.x, 0.1f, 0.1f, 100.0f);
 
-	ImGui::NewLine();
-	ImGui::DragFloat3("Camera Position", &m_eye.x, 1.0f, -100.0f, 100.0f);
 
 	ImGui::NewLine();
+	ImGui::SeparatorText("Light");
 	ImGui::DragFloat3("Directional Light", &m_DirectionalLight[0].x, 0.01f, -1.0f, 1.0f);
 	ImGui::ColorEdit4("Directional Light Color", &m_LightColor[0].x);
 	ImGui::DragFloat("Directional Light Power", &m_LightPower, 0.1f, 0.0f, 10.0f);
 
 	ImGui::NewLine();
+	ImGui::SeparatorText("Camera Setting");
 	ImGui::DragFloat("Near", &m_near, 0.1f, 0.1f, m_far - 0.2f);
 	ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
 	ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
@@ -291,9 +292,8 @@ bool DemoGameApp::InitD3D()
 	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; // 깊이 버퍼 업데이트 허용
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS; // Z값이 낮으면 앞으로 렌더링
 	depthStencilDesc.StencilEnable = false; // Stencil Test 비활성화
-
-	//ComPtr<ID3D11DepthStencilState> depthStencilState = nullptr;
 	m_pDevice->CreateDepthStencilState(&depthStencilDesc, m_pDepthStencilState.GetAddressOf());
+
 
 	// skybox 전용 depth/stencil state 생성
 	D3D11_DEPTH_STENCIL_DESC skyDSD = {};
@@ -532,7 +532,7 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreateSamplerState(&samplerStateDesc, m_pSamplerState.GetAddressOf()));
 
 	// 상수버퍼에 쓸 월드 행렬 초기화
-	m_WorldMatrix1 = DirectX::XMMatrixIdentity();
+	
 
 	fovWidht = m_Width;
 	fovHeight = m_Height;
