@@ -9,10 +9,15 @@ cbuffer ConstantBuffer : register(b0)
     matrix World;
     matrix View;
     matrix Projection;
-    float4 vDirectionalLight[2];
-    float4 vDirectionalColor[2];
-    float4 vOutputColor;
+    
+    float4 vDirectionalLight;
+    float4 vDirectionalColor;
+    
+    float3 camerapos;
+    float shininess;
 }
+
+
 
 struct VS_INPUT
 {
@@ -24,8 +29,9 @@ struct VS_INPUT
 struct PS_INPUT
 {
     float4 pos : SV_POSITION;
-    float3 norm : TEXCOORD0;
-    float2 Tex : TEXCOORD1;
+    float3 worldpos : TEXCOORD0;
+    float3 norm : TEXCOORD1;
+    float2 Tex : TEXCOORD2;
 };
 
 struct VS_SKYBOX_INPUT
@@ -36,5 +42,5 @@ struct VS_SKYBOX_INPUT
 struct PS_SKYBOX_INPUT
 {
     float4 pos : SV_Position;
-    float3 Tex : position;
+    float3 Tex : TEXCOORD0;
 };

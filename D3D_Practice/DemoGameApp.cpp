@@ -32,9 +32,12 @@ struct ConstantBuffer
 	Matrix View; // 4
 	Matrix Projection; // 4
 
-	Vector4 DirectionalLight[2];
-	Vector4 DirectionalLightColor[2];
-	Vector4 FinalColor;
+	Vector4 DirectionalLight;
+	Vector4 DirectionalLightColor;
+	//Vector4 FinalColor;
+
+	Vector3 CameraPos;
+	float shininess;
 };
 
 DemoGameApp::DemoGameApp()
@@ -117,19 +120,20 @@ void DemoGameApp::Render()
 
 	// 상수버퍼로 도형 생성
 	ConstantBuffer cbuffer = {};
+	m_Scale1 = Vector3{ 100,100,100 };
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
 	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
 	cbuffer.Projection = XMMatrixTranspose(m_ProjectionMatrix);
-	cbuffer.DirectionalLight[0] = m_DirectionalLight[0];
-	cbuffer.DirectionalLightColor[0] = m_LightColor[0];
-	cbuffer.FinalColor = Vector4{ 0, 0, 0, 0 };
+	cbuffer.DirectionalLight= m_DirectionalLight;
+	cbuffer.DirectionalLightColor= m_LightColor;
+	cbuffer.CameraPos = m_Camera.GetCameraPosition();
+	cbuffer.shininess = m_LightPower;
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
 
-	
 	m_pDeviceContext->OMSetDepthStencilState(m_pSkyBoxDepthStencilState.Get(), 0);
 	m_pDeviceContext->RSSetState(m_pRasterizerState.Get());
-	//m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
 	m_pDeviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_VertexBufferStride, &m_VertexBufferOffset);
 	m_pDeviceContext->IASetInputLayout(m_pSkyBoxInputLayout.Get());
 	m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);	// Index Buffer에 인덱스들 값 설정
@@ -139,7 +143,6 @@ void DemoGameApp::Render()
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShaderResources(1, 1, m_pSkyBoxShaderResourceView.GetAddressOf());
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
-	
 	
 	cbuffer.World = XMMatrixTranspose(DirectX::SimpleMath::Matrix::CreateTranslation(m_Camera.GetCameraPosition()));
  	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
@@ -161,9 +164,9 @@ void DemoGameApp::Render()
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
-	ImGui::DragFloat3("Directional Light", &m_DirectionalLight[0].x, 0.01f, -1.0f, 1.0f);
-	ImGui::ColorEdit4("Directional Light Color", &m_LightColor[0].x);
-	ImGui::DragFloat("Directional Light Power", &m_LightPower, 0.1f, 0.0f, 10.0f);
+	ImGui::DragFloat3("Directional Light", &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
+	ImGui::ColorEdit4("Directional Light Color", &m_LightColor.x);
+	ImGui::DragFloat("Directional Light Power", &m_LightPower, 0.1f, 0.0f, 10000.0f);
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Camera Setting");
@@ -339,8 +342,6 @@ bool DemoGameApp::InitScene()
 {
 	// 성공여부 판단하는 변수
 	SetCube();
-	//SetSkyBox();
-	
 
 	return true;
 }
@@ -531,17 +532,14 @@ void DemoGameApp::SetCube()
 	samplerStateDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	HR_T(m_pDevice->CreateSamplerState(&samplerStateDesc, m_pSamplerState.GetAddressOf()));
 
-	// 상수버퍼에 쓸 월드 행렬 초기화
-	
-
+	//fov 초기화
 	fovWidht = m_Width;
 	fovHeight = m_Height;
 	FieldOfView = 90;
-
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
 
-	m_DirectionalLight[0] = Vector4{ 0.0f, 0.0f, -1.0f, 1.0f };
-	m_LightColor[0] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	m_DirectionalLight = Vector4{ 0.0f, 0.0f, 1.0f, 1.0f };
+	m_LightColor= { 1.0f, 1.0f, 1.0f, 1.0f };
 }
 
 bool DemoGameApp::InitImGui()

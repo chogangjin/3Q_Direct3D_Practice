@@ -57,8 +57,11 @@ public :
 	Matrix m_ViewMatrix; // 카메라 매트릭스
 	Matrix m_ProjectionMatrix;
 
-	Vector4 m_DirectionalLight[2];
-	Vector4	m_LightColor[2];
+	Vector4 m_DirectionalLight;
+	Vector3 m_Diffuse;
+	Vector3 m_Ambient;
+	Vector3 m_Specular;
+	Vector4	m_LightColor;
 	float	m_LightPower = 1.0f;
 
 	float fovWidht;
@@ -72,7 +75,7 @@ public :
 	bool Initialize() override;
 	void LateInitialize() override;
 	void Shutdown() override;
-	//void MessageProc(HWND, UINT, WPARAM, LPARAM);
+	
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParameter, LPARAM lParameter) override;
 	virtual void Render();
 	
