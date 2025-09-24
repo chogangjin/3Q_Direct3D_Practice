@@ -28,17 +28,36 @@ struct Vertex
 
 struct ConstantBuffer
 {
-	Matrix World; // 4
-	Matrix View; // 4
-	Matrix Projection; // 4
+	Matrix World; // 16
+	Matrix View; // 16
+	Matrix Projection; // 16
 
 	Vector4 DirectionalLight;
 	Vector4 DirectionalLightColor;
-	//Vector4 FinalColor;
+	
+	Vector4 DiffuseColor;
+	Vector4 AmbientColor;
+	Vector4 SpecularColor;
+	
+	Vector4 DiffuseMaterial;
+	Vector4 AmbientMaterial;
+	Vector4 SpecularMaterial;
 
 	Vector3 CameraPos;
 	float shininess;
 };
+
+//struct Lightbuffer
+//{
+//	Vector3 DiffuseColor2; //12
+//	float DiffusePower2; // 4
+//
+//	Vector3 AmbientColor2;
+//	float AmbientPower2;
+//
+//	Vector3 SpecularColor2;
+//	float SpecularPower2;
+//};
 
 DemoGameApp::DemoGameApp()
 {
@@ -113,22 +132,30 @@ void DemoGameApp::Render()
 	m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);	// Index Buffer에 인덱스들 값 설정
 	m_pDeviceContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);					// VertexShader 설정
 	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());		// ConstantBuffer 초기화
+	//m_pDeviceContext->VSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);					// PixelShader 설정
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShaderResources(0, 1, m_pShaderResourceView.GetAddressOf());
+	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
 
 	// 상수버퍼로 도형 생성
 	ConstantBuffer cbuffer = {};
-	m_Scale1 = Vector3{ 100,100,100 };
-	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z);
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z)*DirectX::XMMatrixTranslation(m_Translation1.x, m_Translation1.y, m_Translation1.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
 	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
 	cbuffer.Projection = XMMatrixTranspose(m_ProjectionMatrix);
 	cbuffer.DirectionalLight= m_DirectionalLight;
 	cbuffer.DirectionalLightColor= m_LightColor;
+	cbuffer.DiffuseColor = m_DiffuseColor;
+	cbuffer.DiffuseMaterial = m_DiffuseMaterial;
+	cbuffer.AmbientColor = m_AmbientColor;
+	cbuffer.AmbientMaterial= m_AmbientMaterial;
+	cbuffer.SpecularColor = m_SpecularColor;
+	cbuffer.SpecularMaterial = m_SpecularMaterial;
+
 	cbuffer.CameraPos = m_Camera.GetCameraPosition();
-	cbuffer.shininess = m_LightPower;
+	cbuffer.shininess = m_Shininess;
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
 
@@ -161,12 +188,20 @@ void DemoGameApp::Render()
 	ImGui::DragFloat3("Sun Rotation", &m_Roataion1.x, 1.0f, -360.0f, 360.0f);
 	ImGui::DragFloat3("Sun Scale", &m_Scale1.x, 0.1f, 0.1f, 100.0f);
 
-
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
 	ImGui::DragFloat3("Directional Light", &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
 	ImGui::ColorEdit4("Directional Light Color", &m_LightColor.x);
-	ImGui::DragFloat("Directional Light Power", &m_LightPower, 0.1f, 0.0f, 10000.0f);
+	ImGui::ColorEdit4("Diffuse Color", &m_DiffuseColor.x);
+	ImGui::ColorEdit4("Ambient Color", &m_AmbientColor.x);
+	ImGui::ColorEdit4("SpecularColor", &m_SpecularColor.x);
+
+	ImGui::NewLine();
+	ImGui::SeparatorText("Material");
+	ImGui::ColorEdit4("Diffuse Material", &m_DiffuseMaterial.x);
+	ImGui::ColorEdit4("Ambient Material", &m_AmbientMaterial.x);
+	ImGui::ColorEdit4("Specular Material", &m_SpecularMaterial.x);
+	ImGui::DragFloat("Shininess", &m_Shininess, 0.1f, 0.0f, 10000.0f);
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Camera Setting");
@@ -515,6 +550,10 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf())); // 버퍼 생성
 	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf()); // 상수버퍼를 Vertex Shader에 연결
 
+	//HR_T(m_pDevice->CreateBuffer(&cbDesc, nullptr, m_pLightBuffer.GetAddressOf()));
+	//m_pDeviceContext->VSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
+	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
+
 	ComPtr<ID3D11Resource> sampletexture = nullptr;
 	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/SampleTexture.dds", sampletexture.GetAddressOf(), m_pShaderResourceView.GetAddressOf()));
 
@@ -532,14 +571,16 @@ void DemoGameApp::SetCube()
 	samplerStateDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	HR_T(m_pDevice->CreateSamplerState(&samplerStateDesc, m_pSamplerState.GetAddressOf()));
 
+	// World Matrix
+	m_Scale1 = Vector3{ 100,100,100 };
+	m_Translation1 = Vector3{ 0,0,1000 };
+	m_Shininess = 1000;
+
 	//fov 초기화
 	fovWidht = m_Width;
 	fovHeight = m_Height;
 	FieldOfView = 90;
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
-
-	m_DirectionalLight = Vector4{ 0.0f, 0.0f, 1.0f, 1.0f };
-	m_LightColor= { 1.0f, 1.0f, 1.0f, 1.0f };
 }
 
 bool DemoGameApp::InitImGui()

@@ -40,6 +40,7 @@ public :
 	ComPtr<ID3D11Buffer> m_pVertexBuffer = nullptr;       // 버텍스 버퍼
 	ComPtr<ID3D11Buffer> m_pIndexBuffer = nullptr;		  // 인덱스 버퍼
 	ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;	  // 상수 버퍼
+	ComPtr<ID3D11Buffer> m_pLightBuffer = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pShaderResourceView = nullptr; // 텍스쳐를 입히기 위한 Shader Resource View
 	ComPtr<ID3D11ShaderResourceView> m_pSkyBoxShaderResourceView = nullptr;
 	ComPtr<ID3D11SamplerState> m_pSamplerState = nullptr; // Sampler State
@@ -57,12 +58,15 @@ public :
 	Matrix m_ViewMatrix; // 카메라 매트릭스
 	Matrix m_ProjectionMatrix;
 
-	Vector4 m_DirectionalLight;
-	Vector3 m_Diffuse;
-	Vector3 m_Ambient;
-	Vector3 m_Specular;
-	Vector4	m_LightColor;
-	float	m_LightPower = 1.0f;
+	Vector4 m_DirectionalLight = Vector4{ 0.0f, 0.0f, 1.0f, 1.0f };
+	Vector4 m_DiffuseColor{ 0.9f,0.9f,0.9f,0.9f };
+	Vector4 m_DiffuseMaterial{ 0.9f,0.9f,0.9f,1.0f };
+	Vector4 m_AmbientColor{ 0.1f,0.1f,0.1f,1.0f };
+	Vector4 m_AmbientMaterial{ 0.1f,0.1f,0.1f,1.0f };
+	Vector4 m_SpecularColor{ 0.9f,0.9f,0.9f,1.0f };
+	Vector4 m_SpecularMaterial{ 0.9f,0.9f,0.9f,1.0f };
+	Vector4	m_LightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	float	m_Shininess = 1.0f;
 
 	float fovWidht;
 	float fovHeight;

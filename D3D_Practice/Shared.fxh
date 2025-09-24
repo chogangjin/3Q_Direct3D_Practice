@@ -13,11 +13,29 @@ cbuffer ConstantBuffer : register(b0)
     float4 vDirectionalLight;
     float4 vDirectionalColor;
     
+    float4 DiffuseColor;
+    float4 AmbientColor;
+    float4 SpecularColor;
+    
+    float4 DiffuseMaterial;
+    float4 AmbientMaterial;
+    float4 SpecularMaterial;
+    
     float3 camerapos;
     float shininess;
 }
 
-
+//cbuffer LightBuffer : register(b1)
+//{
+//    float3 DiffuseColors;
+//    float DiffusePowers;
+//    
+//    float3 AmbientColors;
+//    float AmbientPowers;
+//    
+//    float3 SpecularColors;
+//    float SpecularPowers;
+//}
 
 struct VS_INPUT
 {
