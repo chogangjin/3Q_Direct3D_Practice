@@ -58,7 +58,7 @@ public :
 	Matrix m_ViewMatrix; // 카메라 매트릭스
 	Matrix m_ProjectionMatrix;
 
-	Vector4 m_DirectionalLight = Vector4{ 0.0f, 0.0f, 1.0f, 1.0f };
+	Vector4 m_DirectionalLight = Vector4{ 0.0f, 0.0f, 1.0f, 0.0f };
 	Vector4 m_DiffuseColor{ 0.9f,0.9f,0.9f,0.9f };
 	Vector4 m_DiffuseMaterial{ 0.9f,0.9f,0.9f,1.0f };
 	Vector4 m_AmbientColor{ 0.1f,0.1f,0.1f,1.0f };

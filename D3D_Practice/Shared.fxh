@@ -27,20 +27,26 @@ cbuffer ConstantBuffer : register(b0)
 
 //cbuffer LightBuffer : register(b1)
 //{
-//    float3 DiffuseColors;
-//    float DiffusePowers;
-//    
-//    float3 AmbientColors;
-//    float AmbientPowers;
-//    
-//    float3 SpecularColors;
-//    float SpecularPowers;
+//    float4 vDirectionalLights;
+//    float4 vDirectionalColors;
+    
+//    float4 DiffuseColors;
+//    float4 DiffuseMaterials;
+     
+//    float4 AmbientColors;
+//    float4 AmbientMaterials;
+    
+//    float4 SpecularColors;
+//    float4 SpecularMaterials;
+    
+//    float shininess2;
+//    float3 padding;
 //}
 
 struct VS_INPUT
 {
     float4 pos : POSITION;
-    float3 normal : NORMAL;
+    float4 normal : NORMAL;
     float2 Tex : TEXCOORD0;
 };
 

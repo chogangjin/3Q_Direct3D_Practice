@@ -49,14 +49,20 @@ struct ConstantBuffer
 
 //struct Lightbuffer
 //{
-//	Vector3 DiffuseColor2; //12
-//	float DiffusePower2; // 4
+//	Vector4 DirectionalLight;
+//	Vector4 DirectionalLightColor;
 //
-//	Vector3 AmbientColor2;
-//	float AmbientPower2;
+//	Vector4 DiffuseColor; //16
+//	Vector4 DiffuseMaterial;
 //
-//	Vector3 SpecularColor2;
-//	float SpecularPower2;
+//	Vector4 AmbientColor;
+//	Vector4 AmbientMaterial;
+//
+//	Vector4 SpecularColor;
+//	Vector4 SpecularMaterial;
+//
+//	float shininess; // 4 
+//	Vector3 padding; // 12 
 //};
 
 DemoGameApp::DemoGameApp()
@@ -135,22 +141,35 @@ void DemoGameApp::Render()
 	//m_pDeviceContext->VSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);					// PixelShader 설정
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
-	m_pDeviceContext->PSSetShaderResources(0, 1, m_pShaderResourceView.GetAddressOf());
 	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
+	m_pDeviceContext->PSSetShaderResources(0, 1, m_pShaderResourceView.GetAddressOf());
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
+
+	// 라이트 버퍼 생성
+	//Lightbuffer lbuffer = {};
+	//lbuffer.DirectionalLight = m_DirectionalLight;
+	//lbuffer.DirectionalLightColor = m_LightColor;
+	//lbuffer.AmbientColor = m_AmbientColor;
+	//lbuffer.AmbientMaterial = m_AmbientMaterial;
+	//lbuffer.DiffuseColor = m_DiffuseColor;
+	//lbuffer.DiffuseMaterial = m_DiffuseMaterial;
+	//lbuffer.SpecularColor = m_SpecularColor;
+	//lbuffer.SpecularMaterial = m_SpecularMaterial;
+	//lbuffer.shininess = m_Shininess;
+	//DirectX::XMMatrixRotationRollPitchYawFromVector({m_DirectionalLight.x, m_DirectionalLight.y, m_DirectionalLight.z} );
 
 	// 상수버퍼로 도형 생성
 	ConstantBuffer cbuffer = {};
-	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z)*DirectX::XMMatrixTranslation(m_Translation1.x, m_Translation1.y, m_Translation1.z);
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z)*DirectX::XMMatrixRotationRollPitchYaw(m_Roataion1.x, m_Roataion1.y, m_Roataion1.z)*DirectX::XMMatrixTranslation(m_Translation1.x, m_Translation1.y, m_Translation1.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
 	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
 	cbuffer.Projection = XMMatrixTranspose(m_ProjectionMatrix);
-	cbuffer.DirectionalLight= m_DirectionalLight;
-	cbuffer.DirectionalLightColor= m_LightColor;
+	cbuffer.DirectionalLight = m_DirectionalLight;
+	cbuffer.DirectionalLightColor = m_LightColor;
 	cbuffer.DiffuseColor = m_DiffuseColor;
 	cbuffer.DiffuseMaterial = m_DiffuseMaterial;
 	cbuffer.AmbientColor = m_AmbientColor;
-	cbuffer.AmbientMaterial= m_AmbientMaterial;
+	cbuffer.AmbientMaterial = m_AmbientMaterial;
 	cbuffer.SpecularColor = m_SpecularColor;
 	cbuffer.SpecularMaterial = m_SpecularMaterial;
 
@@ -191,8 +210,8 @@ void DemoGameApp::Render()
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
 	ImGui::DragFloat3("Directional Light", &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
-	ImGui::ColorEdit4("Directional Light Color", &m_LightColor.x);
-	ImGui::ColorEdit4("Diffuse Color", &m_DiffuseColor.x);
+	ImGui::ColorEdit4("Diffuse Color", &m_LightColor.x);
+	//ImGui::ColorEdit4("Diffuse Color", &m_DiffuseColor.x);
 	ImGui::ColorEdit4("Ambient Color", &m_AmbientColor.x);
 	ImGui::ColorEdit4("SpecularColor", &m_SpecularColor.x);
 
@@ -575,6 +594,8 @@ void DemoGameApp::SetCube()
 	m_Scale1 = Vector3{ 100,100,100 };
 	m_Translation1 = Vector3{ 0,0,1000 };
 	m_Shininess = 1000;
+
+	m_Camera.m_MoveSpeed = 500;
 
 	//fov 초기화
 	fovWidht = m_Width;
