@@ -3,7 +3,7 @@
 #include "../DirectX_3D_Lilbrary/Helper.h"
 #include <d3dcompiler.h>
 #include <DirectXTK/DDSTextureLoader.h>
-
+#include <directxtk/WICTextureLoader.h>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -16,21 +16,20 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 struct Vertex
 {
 	Vector3 position;	
-	Vector3 normal;
 	Vector2 texture;
+	Vector3 Normal;
+	Vector3 Tangent;
+	Vector3 BiNormal;
 
 	Vertex(float x, float y,  float z) : position(x,y,z) { }
-	Vertex(Vector3 position) : position(position) { }
-	Vertex(Vector3 position, Vector3 normal) : position(position), normal(normal) { }
-	Vertex(Vector3 position, Vector2 texture) : position(position), texture(texture){ normal = { 0,0,0 }; }
-	Vertex(Vector3 position, Vector3 normal, Vector2 texture) : position(position), normal(normal), texture(texture) {  }
+	Vertex(Vector3 position, Vector2 texture = {}, Vector3 Normal = {}, Vector3 tangent = {}, Vector3 binormal = {}) : position(position), Normal(Normal), texture(texture), Tangent(tangent), BiNormal(binormal) {}
 };
 
 struct ConstantBuffer
 {
-	Matrix World; // 16
-	Matrix View; // 16
-	Matrix Projection; // 16
+	Matrix World;		// 16
+	Matrix View;		// 16
+	Matrix Projection;  // 16
 
 	Vector4 DirectionalLight;
 	Vector4 DirectionalLightColor;
@@ -143,6 +142,8 @@ void DemoGameApp::Render()
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShaderResources(0, 1, m_pShaderResourceView.GetAddressOf());
+	m_pDeviceContext->PSSetShaderResources(2, 1, m_pNormalMap.GetAddressOf());
+	m_pDeviceContext->PSSetShaderResources(3, 1, m_pSpecularMap.GetAddressOf());
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
 
 	// 라이트 버퍼 생성
@@ -211,7 +212,6 @@ void DemoGameApp::Render()
 	ImGui::SeparatorText("Light");
 	ImGui::DragFloat3("Directional Light", &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
 	ImGui::ColorEdit4("Diffuse Color", &m_LightColor.x);
-	//ImGui::ColorEdit4("Diffuse Color", &m_DiffuseColor.x);
 	ImGui::ColorEdit4("Ambient Color", &m_AmbientColor.x);
 	ImGui::ColorEdit4("SpecularColor", &m_SpecularColor.x);
 
@@ -304,7 +304,6 @@ bool DemoGameApp::InitD3D()
 		nullptr,
 		nullptr,
 		m_pSwapChain.GetAddressOf());
-
 
 	//RenderTargetView 생성
 	ComPtr<ID3D11Texture2D> BackBuffer;
@@ -415,40 +414,41 @@ void DemoGameApp::SetCube()
 	{
 		//라이팅 큐브
 			//노말벡터가 Y+방향
-			Vertex{Vector3{-1.0f, 1.0f, -1.0f},  Vector3{0.0f,  1.0f, 0.0f}, Vector2{0.0f, 1.0f}}, // 0
-			Vertex{Vector3{-1.0f, 1.0f,  1.0f},  Vector3{0.0f,  1.0f, 0.0f}, Vector2{0.0f, 0.0f}}, // 1
-			Vertex{Vector3{ 1.0f, 1.0f,  1.0f},  Vector3{0.0f,  1.0f, 0.0f}, Vector2{1.0f, 0.0f}}, // 2
-			Vertex{Vector3{ 1.0f, 1.0f, -1.0f},  Vector3{0.0f,  1.0f, 0.0f}, Vector2{1.0f, 1.0f}}, // 3
-
-			//노말벡터가 Y-방향
-			Vertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector2{0.0f, 1.0f}}, // 4
-			Vertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector2{0.0f, 0.0f}}, // 5
-			Vertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector2{1.0f, 0.0f}}, // 6
-			Vertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector2{1.0f, 1.0f}}, // 7
-
-			//노말벡터가 X- 방향
-			Vertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector2{0.0f, 1.0f}}, // 8
-			Vertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector2{0.0f, 0.0f}}, // 9
-			Vertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector2{1.0f, 0.0f}}, // 10
-			Vertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector2{1.0f, 1.0f}}, // 11
-
-			//노말벡터가 X+ 방향
-			Vertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector2{0.0f, 1.0f}}, // 12
-			Vertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector2{0.0f, 0.0f}}, // 13
-			Vertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector2{1.0f, 0.0f}}, // 14
-			Vertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector2{1.0f, 1.0f}}, // 15
-
-			//노말벡터가 Z- 방향
-			Vertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 16
-			Vertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 17
-			Vertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 18
-			Vertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 19
-
-			//노말벡터가 Z+방향
-			Vertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 20
-			Vertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 21
-			Vertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 22
-			Vertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 23
+			//                   position                texture                   normal                     tangent                    binormal
+			Vertex{Vector3{-1.0f, 1.0f, -1.0f}, Vector2{0.0f, 1.0f}, Vector3{0.0f,  1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 0
+			Vertex{Vector3{-1.0f, 1.0f,  1.0f}, Vector2{0.0f, 0.0f}, Vector3{0.0f,  1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 1
+			Vertex{Vector3{ 1.0f, 1.0f,  1.0f}, Vector2{1.0f, 0.0f}, Vector3{0.0f,  1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 2
+			Vertex{Vector3{ 1.0f, 1.0f, -1.0f}, Vector2{1.0f, 1.0f}, Vector3{0.0f,  1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 3
+																	   
+			//노말벡터가 Y-방향										 
+			Vertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 1.0f}}, // 4
+			Vertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 1.0f}}, // 5
+			Vertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{1.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 1.0f}}, // 6
+			Vertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 1.0f}}, // 7
+																	   
+			//노말벡터가 X- 방향										 
+			Vertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 8
+			Vertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 9
+			Vertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{1.0f, 0.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 10
+			Vertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{1.0f, 1.0f}, Vector3{-1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}}, // 11
+																	   
+			//노말벡터가 X+ 방향										 
+			Vertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{0.0f, 1.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{0.0f,0.0f, -1.0f}}, // 12
+			Vertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{0.0f, 0.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{0.0f,0.0f, -1.0f}}, // 13
+			Vertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{0.0f,0.0f, -1.0f}}, // 14
+			Vertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}, Vector3{ 1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}, Vector3{0.0f,0.0f, -1.0f}}, // 15
+																	   
+			//노말벡터가 Z- 방향										 
+			Vertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{0.0f, 1.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}}, // 16
+			Vertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{0.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}}, // 17
+			Vertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{1.0f, 0.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}}, // 18
+			Vertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{1.0f, 1.0f}, Vector3{0.0f, 0.0f, -1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, -1.0f, 0.0f}}, // 19
+																	   
+			//노말벡터가 Z+방향										 
+			Vertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}}, // 20
+			Vertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}}, // 21
+			Vertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}}, // 22
+			Vertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}, Vector3{0.0f, 0.0f,  1.0f}, Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}}, // 23
 	};
 
 	// 정점 버퍼 설정
@@ -488,8 +488,10 @@ void DemoGameApp::SetCube()
 	D3D11_INPUT_ELEMENT_DESC layout[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD",0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
+		{"TEXCOORD",0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
 	HR_T(m_pDevice->CreateInputLayout(
@@ -574,10 +576,19 @@ void DemoGameApp::SetCube()
 	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 
 	ComPtr<ID3D11Resource> sampletexture = nullptr;
-	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/SampleTexture.dds", sampletexture.GetAddressOf(), m_pShaderResourceView.GetAddressOf()));
+	HR_T(DirectX::CreateWICTextureFromFile(m_pDevice.Get(), L"../Resources/Bricks_Diffuse.jpg", sampletexture.GetAddressOf(), m_pShaderResourceView.GetAddressOf()));
+	//HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/SampleTexture.dds", sampletexture.GetAddressOf(), m_pShaderResourceView.GetAddressOf()));
 
+	sampletexture = nullptr;
+	HR_T(DirectX::CreateWICTextureFromFile(m_pDevice.Get(), L"../Resources/Bricks_Normal.jpg", sampletexture.GetAddressOf(), m_pNormalMap.GetAddressOf()));
+
+	sampletexture = nullptr;
+	HR_T(DirectX::CreateWICTextureFromFile(m_pDevice.Get(), L"../Resources/Bricks_Specular.png", sampletexture.GetAddressOf(), m_pSpecularMap.GetAddressOf()));
+	
 	ComPtr<ID3D11Resource> skycubeTexture = nullptr;
 	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/cubemap.dds", skycubeTexture.GetAddressOf(), m_pSkyBoxShaderResourceView.GetAddressOf()));
+
+	
 
 	// SamplerState 생성
 	D3D11_SAMPLER_DESC samplerStateDesc = {};

@@ -42,6 +42,8 @@ public :
 	ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;	  // 상수 버퍼
 	ComPtr<ID3D11Buffer> m_pLightBuffer = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pShaderResourceView = nullptr; // 텍스쳐를 입히기 위한 Shader Resource View
+	ComPtr<ID3D11ShaderResourceView> m_pNormalMap = nullptr;
+	ComPtr<ID3D11ShaderResourceView> m_pSpecularMap = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pSkyBoxShaderResourceView = nullptr;
 	ComPtr<ID3D11SamplerState> m_pSamplerState = nullptr; // Sampler State
 

@@ -1,5 +1,7 @@
 Texture2D txDiffuse : register(t0);
 TextureCube SkyBox : register(t1);
+Texture2D txNormal : register(t2);
+Texture2D txSpecular : register(t3);
 
 SamplerState samLinear : register(s0);
 
@@ -46,16 +48,20 @@ cbuffer ConstantBuffer : register(b0)
 struct VS_INPUT
 {
     float4 pos : POSITION;
-    float4 normal : NORMAL;
     float2 Tex : TEXCOORD0;
+    float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 binormal : BINORMAL;
 };
 
 struct PS_INPUT
 {
     float4 pos : SV_POSITION;
     float3 worldpos : TEXCOORD0;
-    float3 norm : TEXCOORD1;
-    float2 Tex : TEXCOORD2;
+    float2 Tex : TEXCOORD1;
+    float3 norm : TEXCOORD2;
+    float3 tangent : TEXCOORD3;
+    float3 binormal : TEXCOORD4;
 };
 
 struct VS_SKYBOX_INPUT
