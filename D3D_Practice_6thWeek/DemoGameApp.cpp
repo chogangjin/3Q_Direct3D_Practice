@@ -143,6 +143,7 @@ void DemoGameApp::Render()
 	cbuffer.World = XMMatrixTranspose(DirectX::SimpleMath::Matrix::CreateTranslation(m_Camera.GetCameraPosition()));
  	
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
+	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
 	m_pDeviceContext->OMSetDepthStencilState(nullptr, 0);
 	m_pDeviceContext->RSSetState(nullptr);
 
@@ -164,7 +165,6 @@ void DemoGameApp::Render()
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_TreeModel.Draw(m_pDeviceContext.Get());
 
-	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
 
 
 	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleCharacter.x, m_ScaleCharacter.y, m_ScaleCharacter.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RotationCharacter.x, m_RotationCharacter.y, m_RotationCharacter.z) * XMMatrixTranslation(m_TranslationCharacter.x, m_TranslationCharacter.y, m_TranslationCharacter.z);
