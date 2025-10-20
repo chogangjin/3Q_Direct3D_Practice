@@ -40,11 +40,15 @@ float4 main(PS_INPUT input) : SV_TARGET
     float4 Specular = SpecularColor * SpecularMaterial * specularPower/** float4(specularMap,0)*/;
     Specular.a = 1;
     
-    
+    //alpha
     // 최종 출력
     float4 finalColor = 0;
     finalColor = saturate(Diffuse + Ambient + Specular);
     //finalColor.a = 1;
     finalColor.a *= opacity;
+    if (finalColor.a < 0.5f)
+    {
+        discard;
+    }
     return finalColor;
 }

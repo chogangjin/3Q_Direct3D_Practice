@@ -165,7 +165,19 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 				textures.insert(textures.end(), Maps.begin(), Maps.end());
 			}
 		}
-		
+		/*	else
+			{
+				HRESULT hr;
+				Texture t = { "texture_opacity","../Resources/Default_Material.png", nullptr };
+				std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+				hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+				if (FAILED(hr))
+				{
+					std::runtime_error("Texture couldn't be loaded");
+				}
+				textures.push_back(t);
+			}
+			*/
 		if (pMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &astr) == AI_SUCCESS)
 		{
 			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_EMISSIVE); i++)
@@ -265,7 +277,6 @@ ID3D11ShaderResourceView* ModelLoader::loadEmbeddedTexture(const aiTexture* embe
 		if (FAILED(hr))
 		{
 			throw std::runtime_error("CreateShaderResourceView Failed!");
-			//MessageBox(hwnd, "CreateShaderResourceView Failed!", "Error!", MB_ICONERROR | MB_OK);
 		}
 
 		return texture;
@@ -277,7 +288,6 @@ ID3D11ShaderResourceView* ModelLoader::loadEmbeddedTexture(const aiTexture* embe
 	if (FAILED(hr))
 	{
 		throw std::runtime_error("Texture couldn't be created from memory!");
-		//MessageBox(hwnd, "Texture couldn't be created from memory!", "Error!", MB_ICONERROR | MB_OK);
 	}
 
 	return texture;

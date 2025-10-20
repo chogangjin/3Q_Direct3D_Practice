@@ -44,6 +44,7 @@ public :
 	ComPtr<ID3D11Buffer> m_pConstantBuffer = nullptr;	  // 상수 버퍼
 	ComPtr<ID3D11Buffer> m_pLightBuffer = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pShaderResourceView = nullptr; // 텍스쳐를 입히기 위한 Shader Resource View
+	ComPtr<ID3D11ShaderResourceView> m_pDefaultShaderResourceView = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pNormalMap = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pSpecularMap = nullptr;
 	ComPtr<ID3D11ShaderResourceView> m_pSkyBoxShaderResourceView = nullptr;
@@ -54,9 +55,17 @@ public :
 	UINT m_VertexCount = 0; // 버텍스 개수
 	int m_Indices = 0;
 
-	Vector3 m_Scale1{ 1,1,1 };
-	Vector3 m_Roataion1{ 0,0,0 };
-	Vector3 m_Translation1{ 0,0,0 };
+	Vector3 m_ScaleTree{ 1,1,1 };
+	Vector3 m_RoataionTree{ 0,0,0 };
+	Vector3 m_TranslationTree{ 0,0,0 };
+	
+	Vector3 m_ScaleZelda{ 1,1,1 };
+	Vector3 m_RoataionZelda{ 0,0,0 };
+	Vector3 m_TranslationZelda{ 0,0,0 };
+
+	Vector3 m_ScaleCharacter{ 1,1,1 };
+	Vector3 m_RotationCharacter{ 0,0,0 };
+	Vector3 m_TranslationCharacter{ -200,0,0 };
 	
 	Matrix m_WorldMatrix = DirectX::XMMatrixIdentity();
 	Matrix m_ViewMatrix; // 카메라 매트릭스
@@ -80,7 +89,9 @@ public :
 
 	float elapsedTime = 0;
 
-	ModelLoader m_ModelLoader;
+	ModelLoader m_TreeModel;
+	ModelLoader m_ZeldaModel;
+	ModelLoader m_Character;
 
 	bool Initialize() override;
 	void LateInitialize() override;

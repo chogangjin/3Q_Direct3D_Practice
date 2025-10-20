@@ -80,9 +80,9 @@ void DemoGameApp::OnUpdate()
 {
 	elapsedTime += TimeSystem::GetInstance()->deltaTime / 1000;
 	
-	DirectX::XMMATRIX translation1 = DirectX::XMMatrixTranslation(m_Translation1.x, m_Translation1.y, m_Translation1.z);
-	DirectX::XMMATRIX rotation1 = DirectX::XMMatrixRotationRollPitchYaw(m_Roataion1.x, m_Roataion1.y, m_Roataion1.z);
-	DirectX::XMMATRIX scale1 = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z);
+	DirectX::XMMATRIX translation1 = DirectX::XMMatrixTranslation(m_TranslationTree.x, m_TranslationTree.y, m_TranslationTree.z);
+	DirectX::XMMATRIX rotation1 = DirectX::XMMatrixRotationRollPitchYaw(m_RoataionTree.x, m_RoataionTree.y, m_RoataionTree.z);
+	DirectX::XMMATRIX scale1 = DirectX::XMMatrixScaling(m_ScaleTree.x, m_ScaleTree.y, m_ScaleTree.z);
 	m_WorldMatrix = scale1 * rotation1 * translation1;
 	
 	m_Camera.GetViewMatrix(m_ViewMatrix);
@@ -143,19 +143,34 @@ void DemoGameApp::Render()
 	cbuffer.World = XMMatrixTranspose(DirectX::SimpleMath::Matrix::CreateTranslation(m_Camera.GetCameraPosition()));
  	
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
-	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
 	m_pDeviceContext->OMSetDepthStencilState(nullptr, 0);
 	m_pDeviceContext->RSSetState(nullptr);
 
 	// fbx
-	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale1.x, m_Scale1.y, m_Scale1.z) * DirectX::XMMatrixRotationRollPitchYaw(m_Roataion1.x, m_Roataion1.y, m_Roataion1.z) * DirectX::XMMatrixTranslation(m_Translation1.x, m_Translation1.y, m_Translation1.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
 	m_pDeviceContext->IASetInputLayout(m_pInputLayout.Get());							// Input Layout설정
 	m_pDeviceContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);					// VertexShader 설정
 	m_pDeviceContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);					// PixelShader 설정
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_pDeviceContext->OMSetBlendState(m_pAlphaBlendState.Get(), nullptr , 0xffffffff);
-	m_ModelLoader.Draw(m_pDeviceContext.Get());
+	
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleZelda.x, m_ScaleZelda.y, m_ScaleZelda.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RoataionZelda.x, m_RoataionZelda.y, m_RoataionZelda.z) * DirectX::XMMatrixTranslation(m_TranslationZelda.x, m_TranslationZelda.y, m_TranslationZelda.z);
+	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
+	m_ZeldaModel.Draw(m_pDeviceContext.Get());
+
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleTree.x, m_ScaleTree.y, m_ScaleTree.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RoataionTree.x, m_RoataionTree.y, m_RoataionTree.z) * DirectX::XMMatrixTranslation(m_TranslationTree.x, m_TranslationTree.y, m_TranslationTree.z);
+	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
+	m_TreeModel.Draw(m_pDeviceContext.Get());
+
+	m_pDeviceContext->DrawIndexed(m_Indices, 0, 0);
+
+
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleCharacter.x, m_ScaleCharacter.y, m_ScaleCharacter.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RotationCharacter.x, m_RotationCharacter.y, m_RotationCharacter.z) * XMMatrixTranslation(m_TranslationCharacter.x, m_TranslationCharacter.y, m_TranslationCharacter.z);
+	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
+	m_Character.Draw(m_pDeviceContext.Get());
 	m_pDeviceContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
 	
@@ -163,17 +178,27 @@ void DemoGameApp::Render()
 	//ImGUI 사용
 	ImGuiBeginDraw();
 	ImGui::Begin("Solar");
-	ImGui::SeparatorText("Sun");
-	ImGui::DragFloat3("Sun Position", &m_Translation1.x, 1.0f, -100.0f, 100.0f);
-	ImGui::DragFloat3("Sun Rotation", &m_Roataion1.x, 1.0f, -360.0f, 360.0f);
-	ImGui::DragFloat3("Sun Scale", &m_Scale1.x, 0.1f, 0.1f, 100.0f);
+	ImGui::SeparatorText("Tree");
+	ImGui::DragFloat3("Tree Position",  &m_TranslationTree.x, 1.0f, -1000.0f, 1000.0f);
+	ImGui::DragFloat3("Tree Rotation",  &m_RoataionTree.x, 0.01f, -100.0f, 100.0f);
+	ImGui::DragFloat3("Tree Scale",		&m_ScaleTree.x, 0.1f, 0.1f, 100.0f);
+
+	ImGui::SeparatorText("Zelda");
+	ImGui::DragFloat3("Zelda Position",   &m_TranslationZelda.x, 1.0f, -100.0f, 100.0f);
+	ImGui::DragFloat3("Zelda Rotation",   &m_RoataionZelda.x,	 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("Zelda Scale",	  &m_ScaleZelda.x,		 0.1f, 0.1f, 100.0f);
+
+	ImGui::SeparatorText("Character");
+	ImGui::DragFloat3("Character Position", &m_TranslationCharacter.x, 1.0f, -1000.0f, 1000.0f);
+	ImGui::DragFloat3("Character Rotation", &m_RotationCharacter.x, 0.01f, -100.0f, 100.0f);
+	ImGui::DragFloat3("Character Scale", &m_ScaleCharacter.x, 1.0f, 0.1f, 100.0f);
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
-	ImGui::DragFloat3("Directional Light", &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
-	ImGui::ColorEdit4("Diffuse Color", &m_LightColor.x);
-	ImGui::ColorEdit4("Ambient Color", &m_AmbientColor.x);
-	ImGui::ColorEdit4("SpecularColor", &m_SpecularColor.x);
+	ImGui::DragFloat3("Directional Light",  &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
+	ImGui::ColorEdit4("Diffuse Color",		&m_LightColor.x);
+	ImGui::ColorEdit4("Ambient Color",		&m_AmbientColor.x);
+	ImGui::ColorEdit4("SpecularColor",		&m_SpecularColor.x);
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Material");
@@ -188,10 +213,6 @@ void DemoGameApp::Render()
 	ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
 	ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
 	 
-	//ImGui::SeparatorText("Zelda");
-	//ImGui::DragFloat3("Zelda Position", &m_Translation1.x, 1.0f, -100.0f, 100.0f);
-	//ImGui::DragFloat3("Zelda Rotation", &m_Roataion1.x, 1.0f, -360.0f, 360.0f);
-	//ImGui::DragFloat3("Zelda Scale",	&m_Scale1.x, 0.1f, 0.1f, 100.0f);
 	ImGui::End();
 	ImGuiRender();
 
@@ -332,10 +353,10 @@ bool DemoGameApp::InitD3D()
 
 	D3D11_BLEND_DESC blendDesc = {};
 	blendDesc.AlphaToCoverageEnable = false;
-	blendDesc.IndependentBlendEnable = false;
+	blendDesc.IndependentBlendEnable = true;
 
 	D3D11_RENDER_TARGET_BLEND_DESC renderTargetBlendDesc = {};
-	renderTargetBlendDesc.BlendEnable = true;
+	renderTargetBlendDesc.BlendEnable = false;
 	renderTargetBlendDesc.BlendOp = D3D11_BLEND_OP_ADD;
 	renderTargetBlendDesc.SrcBlend = D3D11_BLEND_SRC_ALPHA;		 // Src의 Alpha값
 	renderTargetBlendDesc.DestBlend = D3D11_BLEND_INV_SRC_ALPHA; // DestBlend는 (1 - SrcColor.a)
@@ -539,7 +560,8 @@ void DemoGameApp::SetCube()
 	//m_pDeviceContext->VSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
 
-
+	ComPtr<ID3D11Resource> defualttexture = nullptr;
+	//HR_T(DirectX::CreateWICTextureFromFile())
 
 	ComPtr<ID3D11Resource> skycubeTexture = nullptr;
 	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/cubemap.dds", skycubeTexture.GetAddressOf(), m_pSkyBoxShaderResourceView.GetAddressOf()));
@@ -558,8 +580,8 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreateSamplerState(&samplerStateDesc, m_pSamplerState.GetAddressOf()));
 
 	// World Matrix
-	m_Scale1 = Vector3{ 10,10,10 };
-	m_Translation1 = Vector3{ 0,0,1000 };
+	m_ScaleTree = Vector3{ 100,100,100 };
+	m_TranslationTree = Vector3{ 0,0,100 };
 	m_Shininess = 1000;
 
 	m_Camera.m_MoveSpeed = 500;
@@ -571,7 +593,9 @@ void DemoGameApp::SetCube()
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
 
 	//fbx 파일 로드
-	m_ModelLoader.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Tree.fbx");
+	m_TreeModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Tree.fbx");
+	m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/zeldaPosed001.fbx");
+	m_Character.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Character.fbx");
 }
 
 bool DemoGameApp::InitImGui()
