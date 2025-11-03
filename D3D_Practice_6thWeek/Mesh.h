@@ -68,6 +68,11 @@ public:
 			{
 				deviceContext->PSSetShaderResources(5, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
+			else
+			{
+				ID3D11ShaderResourceView* nullSRV = nullptr;
+				deviceContext->PSSetShaderResources(5, 1, &nullSRV);
+			}
 			//if (m_Textures[i].type == "texture_opacity") 
 			{
 				deviceContext->PSSetShaderResources(6, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());

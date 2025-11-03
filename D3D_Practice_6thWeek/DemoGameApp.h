@@ -114,7 +114,7 @@ public :
 	void UnInitImGui();
 
 	void ImGuiBeginDraw();
-	void ImGuiRender();
+	void ImGuiEndDraw();
 };
 
 

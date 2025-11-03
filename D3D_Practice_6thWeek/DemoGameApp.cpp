@@ -171,7 +171,7 @@ void DemoGameApp::Render()
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_Character.Draw(m_pDeviceContext.Get());
-	m_pDeviceContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+	//m_pDeviceContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
 
 	
 
@@ -214,7 +214,7 @@ void DemoGameApp::Render()
 	ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
 	 
 	ImGui::End();
-	ImGuiRender();
+	ImGuiEndDraw();
 
 	m_pSwapChain->Present(0, 0); // 실제 모니터로 출력
 }
@@ -625,7 +625,7 @@ void DemoGameApp::ImGuiBeginDraw()
 	ImGui::NewFrame();
 }
 
-void DemoGameApp::ImGuiRender()
+void DemoGameApp::ImGuiEndDraw()
 {
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
