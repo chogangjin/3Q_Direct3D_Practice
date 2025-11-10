@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "새 프로필",
+    "Projects": [
+      {
+        "Path": "DirectX_3D_Lilbrary\\DirectX_3D_Lilbrary.vcxproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "D3D_Practice\\D3D_Practice.vcxproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "D3D_Practice_ToonShading\\D3D_Practice_ToonShading.vcxproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
