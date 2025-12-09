@@ -422,7 +422,7 @@ bool DemoGameApp::InitScene()
 	//fbx 파일 로드
 	m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
 	//m_ZeldaModel.m_IsRigid = true;
-	//m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
+	//m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Wave Hip Hop Dance.fbx");
 	
 	//스카이큐브 설정
 	SetCube();
