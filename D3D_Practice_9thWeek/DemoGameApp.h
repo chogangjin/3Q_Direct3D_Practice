@@ -79,10 +79,11 @@ public :
 
 	Matrix  m_ShadowView;
 	Matrix  m_ShadowProjection;
-	Vector2 m_ShadowProjectionNearFar;
-	float m_ShadowFow = 90.0f;
-	Vector3 m_ShadowForwardDistanceFromCamera = { 300.0f, 300.0f, 300.0f };
-	Vector3 m_ShadowUpDistanceFromLookAt = {0,100,0};
+	//그림자 fov 설정
+	Vector2 m_ShadowProjectionNearFar{ 100.0f, 100000.0f };
+	float m_ShadowFow = 50.0f;
+	float m_ShadowForwardDistanceFromCamera = 300.0f;
+	float m_ShadowUpDistanceFromLookAt = 100;
 
 	Vector3 m_DirectionalLight = Vector3{ 0.0f, -1.0f, 1.0f};
 	Vector4 m_DiffuseColor{ 0.9f,0.9f,0.9f,0.9f };
@@ -102,7 +103,7 @@ public :
 
 	float elapsedTime = 0;
 
-	SkeletalMesh m_ZeldaModel;
+	SkeletalMesh m_SkinningModel;
 	SkeletalMesh m_Robot;
 	SkeletalMesh m_Plain;
 

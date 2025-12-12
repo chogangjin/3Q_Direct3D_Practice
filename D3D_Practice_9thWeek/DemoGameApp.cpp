@@ -54,7 +54,7 @@ void DemoGameApp::OnUpdate()
 {
 	elapsedTime += TimeSystem::GetInstance()->deltaTime / 1000;
 
-	m_ZeldaModel.Update(TimeSystem::GetInstance()->deltaTime);
+	m_SkinningModel.Update(TimeSystem::GetInstance()->deltaTime);
 	m_Robot.Update(TimeSystem::GetInstance()->deltaTime);
 	m_Plain.Update(TimeSystem::GetInstance()->deltaTime);
 
@@ -76,8 +76,8 @@ void DemoGameApp::OnUpdate()
 			m_ShadowProjectionNearFar.x, 
 			m_ShadowProjectionNearFar.y);
 	}
-	m_ShadowLookAt = Vector3(0, 0, 0);//m_Camera.GetCameraPosition() + m_Camera.GetForward() * m_ShadowForwardDistanceFromCamera;
-	m_ShadowPos = -m_DirectionalLight * 300.0f;//m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
+	m_ShadowLookAt = m_Camera.GetCameraPosition() + m_Camera.GetForward() * m_ShadowForwardDistanceFromCamera;
+	m_ShadowPos = /*-m_DirectionalLight * 300.0f;*/m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
 	m_ShadowView = XMMatrixLookAtLH(m_ShadowPos, m_ShadowLookAt, Vector3{ 0.0f, 1.0f, 0.0f });
 }
 
@@ -121,7 +121,6 @@ void DemoGameApp::Render()
 	m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
 	m_pDeviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_VertexBufferStride, &m_VertexBufferOffset);
 	m_pDeviceContext->IASetInputLayout(m_pInputLayout.Get());							// Input Layout설정
-	//m_pDeviceContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);					// VertexShader 설정
 	m_pDeviceContext->VSSetShader(m_pShadowVertexBuffer.Get(), nullptr, 0);					// VertexShader 설정
 	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());		// ConstantBuffer 초기화
 	m_pDeviceContext->VSSetConstantBuffers(2, 1, m_pShadowBuffer.GetAddressOf());		// ConstantBuffer 초기화
@@ -133,7 +132,7 @@ void DemoGameApp::Render()
 	m_pDeviceContext->RSSetViewports(1, &m_ShadowViewport);
 	m_pDeviceContext->OMSetBlendState(m_pAlphaBlendState.Get(), nullptr, 0xffffffff);
 
-	m_ZeldaModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_SkinningModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
 
@@ -172,7 +171,7 @@ void DemoGameApp::Render()
 	m_pDeviceContext->PSSetShaderResources(7, 1, m_pShadowMapShaderResourceView.GetAddressOf());
 	m_pDeviceContext->OMSetBlendState(m_pAlphaBlendState.Get(), nullptr , 0xffffffff);
 
-	m_ZeldaModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_SkinningModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
 
@@ -414,11 +413,6 @@ bool DemoGameApp::InitScene()
 	HR_T(m_pDevice->CreateVertexShader(vertexShaderBufffer->GetBufferPointer(),
 		vertexShaderBufffer->GetBufferSize(), NULL, m_pShadowVertexBuffer.GetAddressOf()));
 
-	/*D3D11_INPUT_ELEMENT_DESC ShadowInputLayout[] =
-	{
-		{}
-	}*/
-
 	// 픽셀 셰이더 생성
 	ComPtr<ID3DBlob> pixelShaderBuffer = nullptr;
 	HR_T(CompileShaderFromFile(L"PixelShader.hlsl", "main", "ps_5_0", pixelShaderBuffer.GetAddressOf()));
@@ -491,18 +485,14 @@ bool DemoGameApp::InitScene()
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
 
 	//fbx 파일 로드
-	m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
-	//m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Wave Hip Hop Dance.fbx");
-	//m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
+	m_SkinningModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
 	m_Robot.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
 	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plain.fbx");
 	
 	//스카이큐브 설정
 	SetCube();
 
-	//그림자 fov 설정
-	m_ShadowProjectionNearFar.x = 100.0f;
-	m_ShadowProjectionNearFar.y = 500.0f;
+	
 
 	return true;
 }
@@ -673,9 +663,9 @@ void DemoGameApp::ImGuiRender()
 {
 	ImGui::Begin("9th Week");
 	ImGui::SeparatorText("Skinning");
-	ImGui::DragFloat3("Mixamo Position", &m_ZeldaModel.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
-	ImGui::DragFloat3("Mixamo Rotation", &m_ZeldaModel.m_Rotation.x, 0.01f, -360.0f, 360.0f);
-	ImGui::DragFloat3("Mixamo Scale", &m_ZeldaModel.m_Scale.x, 0.1f, 0.1f, 100.0f);
+	ImGui::DragFloat3("Mixamo Position", &m_SkinningModel.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
+	ImGui::DragFloat3("Mixamo Rotation", &m_SkinningModel.m_Rotation.x, 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("Mixamo Scale", &m_SkinningModel.m_Scale.x, 0.1f, 0.1f, 100.0f);
 	
 	ImGui::SeparatorText("BoxHuman");
 	ImGui::DragFloat3("Robot Position", &m_Robot.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
@@ -686,7 +676,6 @@ void DemoGameApp::ImGuiRender()
 	ImGui::DragFloat3("Plain Position", &m_Plain.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
 	ImGui::DragFloat3("Plain Rotation", &m_Plain.m_Rotation.x, 0.01f, -360.0f, 360.0f);
 	ImGui::DragFloat3("Plain Scale", &m_Plain.m_Scale.x, 0.1f, 0.1f, 100.0f);
-	
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
@@ -712,7 +701,7 @@ void DemoGameApp::ImGuiRender()
 
 	//For Debug Shadow
 	ImGui::Begin("DebugShadow");
-	ImGui::SeparatorText("Near Far");
+	ImGui::SeparatorText("Shadow Near Far");
 	ImGui::DragFloat("Shadow Near", &m_ShadowProjectionNearFar.x, 0.1f, 0.1f, m_ShadowProjectionNearFar.y- 0.2f);
 	ImGui::DragFloat("Shadow Far", &m_ShadowProjectionNearFar.y, 0.1f, m_ShadowProjectionNearFar.x + 0.2f, 1000.0f);
 	ImGui::DragFloat("Shadow Fov", &m_ShadowFow, 0.1f);

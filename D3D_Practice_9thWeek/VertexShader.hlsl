@@ -33,5 +33,8 @@ PS_INPUT main( VS_INPUT input)
     output.tangent = normalize(mul(input.tangent, (float3x3) mworld));
     output.binormal = normalize(mul(input.binormal, (float3x3) mworld));
 
+    output.shadowpos = mul(float4(output.worldpos, 1.0f), ShadowView);
+    output.shadowpos = mul(output.shadowpos, ShadowProjection);
+    
 	return output;
 }
