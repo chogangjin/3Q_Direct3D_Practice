@@ -53,22 +53,27 @@ bool SkeletalMesh::LoadModel(HWND hwnd, ID3D11Device* device, ID3D11DeviceContex
 		}
 		m_HasAnimation = true;
 	}
-	
+
+	CheckAnimationType(pScene);
+
 	ProcessNode(pScene->mRootNode, pScene);
 
-	for (auto& mesh : m_Meshes)
+	if(!m_IsRigid)
 	{
-		for (auto& vertex : mesh.m_Vertices)
+		for (auto& mesh : m_Meshes)
 		{
-			float total = 0.f;
-			for (auto& weight : vertex.BlendWeights)
+			for (auto& vertex : mesh.m_Vertices)
 			{
-				total += weight;
-			}   
+				float total = 0.f;
+				for (auto& weight : vertex.BlendWeights)
+				{
+					total += weight;
+				}
 
-			if (total > 1.f)
-			{
-				int a = 0;
+				if (total > 1.f)
+				{
+					int a = 0;
+				}
 			}
 		}
 	}
@@ -79,11 +84,17 @@ bool SkeletalMesh::LoadModel(HWND hwnd, ID3D11Device* device, ID3D11DeviceContex
 void SkeletalMesh::Update(float deltatime)
 {
 	//deltatime = 0;
+	DirectX::XMMATRIX translation = DirectX::XMMatrixTranslation(m_Translation.x, m_Translation.y, m_Translation.z);
+	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationRollPitchYaw(m_Rotation.x, m_Rotation.y, m_Rotation.z);
+	DirectX::XMMATRIX scale = DirectX::XMMatrixScaling(m_Scale.x, m_Scale.y, m_Scale.z);
+	m_WorldMatrix = scale * rotation * translation;
+
 	if (!m_Animations.empty())
 	{
 		m_AnimationProgressTime += deltatime;
-		m_AnimationProgressTime = fmod(m_AnimationProgressTime, m_Animations[m_CurrentAnimationIndex].m_Duration);
+		m_AnimationProgressTime = (float)fmod(m_AnimationProgressTime, m_Animations[m_CurrentAnimationIndex].m_Duration);
 	}
+
 	std::cout << m_AnimationProgressTime << std::endl;
 	for (auto& bone : m_Skeleton)
 	{
@@ -102,7 +113,7 @@ void SkeletalMesh::Update(float deltatime)
 		{
 			bone.modelMatrix = bone.localMatrix;
 		}
-		else 
+		else if (bone.m_ParentIndex != -1 && bone.m_Index != 0)
 		{
 			bone.modelMatrix = bone.localMatrix * m_Skeleton[bone.m_ParentIndex].modelMatrix;
 		}
@@ -112,11 +123,63 @@ void SkeletalMesh::Update(float deltatime)
 	}
 }
 
-void SkeletalMesh::Draw(ID3D11DeviceContext* devicecontext)
+void SkeletalMesh::Draw(ConstantBuffer* pCBuffer, ID3D11Buffer* pConstantBuffer)
 {
+	pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
+	m_pDeviceContext->UpdateSubresource(pConstantBuffer, 0, nullptr, pCBuffer, 0, 0);
 	for (size_t i = 0; i < m_Meshes.size(); ++i)
 	{
-		m_Meshes[i].DrawMesh(devicecontext);
+		m_Meshes[i].DrawMesh(m_pDeviceContext);
+	}
+}
+
+void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstantBuffer, ID3D11Buffer* pBonePoseBuffer, ID3D11Buffer* pBoneOffsetBuffer)
+{
+	pCBuffer->IsRigid = m_IsRigid;
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale.x, m_Scale.y, m_Scale.z) * DirectX::XMMatrixRotationRollPitchYaw(m_Rotation.x, m_Rotation.y, m_Rotation.z) * DirectX::XMMatrixTranslation(m_Translation.x, m_Translation.y, m_Translation.z);
+	pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
+
+	for (int i = 0; i < m_Meshes.size(); i++)
+	{
+		UINT stride = sizeof(Vertex);
+		UINT offset = 0;
+		m_pDeviceContext->IASetVertexBuffers(0, 1, m_Meshes[i].m_pVertexBuffer.GetAddressOf(), &stride, &offset);	// 버텍스 버퍼 입력 조립
+		m_pDeviceContext->IASetIndexBuffer(m_Meshes[i].m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+		for (UINT j = 0; j < m_Meshes[i].m_Textures.size(); j++)
+		{
+			Texture t = m_Meshes[i].m_Textures[j];
+			m_pDeviceContext->PSSetShaderResources(0, 1, t.m_pTextureSRV.GetAddressOf());
+		}
+
+		pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
+		pCBuffer->RefBoneIndex = m_Meshes[i].m_RefBoneIndex;
+		m_pDeviceContext->UpdateSubresource(pConstantBuffer, 0, nullptr, pCBuffer, 0, 0);
+		m_pDeviceContext->UpdateSubresource(pBonePoseBuffer, 0, nullptr, &m_SkeletonPose, 0, 0);
+		m_pDeviceContext->UpdateSubresource(pBoneOffsetBuffer, 0, nullptr, &m_SkeletonInfo.m_BoneOffsetMatrices, 0, 0);
+		
+		 //TODO : UpdateSubresource / VSSetConstantBuffers / pssetconstantbuffer  m_poffsetmatrixbuffer사용
+		m_pDeviceContext->VSSetConstantBuffers(0, 1, &pConstantBuffer);
+		m_pDeviceContext->VSSetConstantBuffers(3, 1, &pBonePoseBuffer);
+		
+		if(!m_IsRigid)
+		{
+			m_pDeviceContext->VSSetConstantBuffers(4, 1, &pBoneOffsetBuffer);
+		}
+		
+		m_pDeviceContext->DrawIndexed(static_cast<UINT>(m_Meshes[i].m_Indices.size()), 0, 0);
+	}
+}
+
+void SkeletalMesh::CheckAnimationType(const aiScene* pScene)
+{
+	for (int i = 0; i < pScene->mNumMeshes; ++i)
+	{
+		if (pScene->mMeshes[i]->mNumBones>0)
+		{
+			this->m_IsRigid = false;
+			return;
+		}
 	}
 }
 
@@ -174,6 +237,7 @@ void SkeletalMesh::ProcessNode(aiNode* node, const aiScene* scene)
 
 Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 {
+	//if (pMesh->mNumBones > 0) { m_IsRigid = false; }
 	Mesh mesh;
 	mesh.m_pDevice = m_pDevice;
 	std::vector<Vertex> vertices; // 메쉬에 들어갈 정점 정보
@@ -222,7 +286,7 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 		m_SkeletonInfo.m_BoneOffsetMatrices.modelMatrix[bone.m_Index] = Matrix(&pBone->mOffsetMatrix.a1)/*.Transpose()*/;
 		if(!m_IsRigid)
 		{
-			for (int j = 0; j < pBone->mNumWeights; j++)
+			for (unsigned int j = 0; j < pBone->mNumWeights; j++)
 			{
 				UINT vertexID = pBone->mWeights[j].mVertexId;
 				float vertexWeight = pBone->mWeights[j].mWeight;
@@ -252,7 +316,7 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 		// 머티리얼 타입별 적용, 실패하면 nullptr 반환
 		if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_DIFFUSE); i++)
+			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_DIFFUSE); i++)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_DIFFUSE, "texture_diffuse", scene);
 				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
@@ -261,7 +325,7 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 		
 		if (pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_AMBIENT); i++)
+			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_AMBIENT); i++)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_AMBIENT, "texture_ambient", scene);
 				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
@@ -270,7 +334,7 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 		
 		if (pMaterial->GetTexture(aiTextureType_SPECULAR, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SPECULAR); i++)
+			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SPECULAR); i++)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_SPECULAR, "texture_specular", scene);
 				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
@@ -279,7 +343,7 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 		
 		if (pMaterial->GetTexture(aiTextureType_OPACITY, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_OPACITY); i++)
+			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_OPACITY); i++)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_OPACITY, "texture_opacity", scene);
 				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
@@ -288,53 +352,21 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 			
 		if (pMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_EMISSIVE); i++)
+			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_EMISSIVE); i++)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_EMISSIVE, "texture_emissive", scene);
 				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
 		}
 
-		if (pMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) )
-		{
-			
-		}
+		//if (pMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) )
+		//{
+		//	
+		//}
 	}
 	mesh.CreateVertexBuffer(m_pDevice);
 	mesh.CreateIndexBuffer(m_pDevice);
 	return mesh;
-}
-
-//void SkeletalMesh::processBone(aiNode* node, const aiScene* scene)
-void SkeletalMesh::processBone(aiBone* pBone, const aiScene* scene)
-{
-	//for (UINT i = 0; i < node->mNumMeshes; i++)
-	{
-		// 노드의 mMesh는 scene의 mMesh인덱스 번호를 반환
-		//aiMesh* pMesh = scene->mMeshes[node->mMeshes[i]];
-		//for (UINT j = 0; j < pMesh->mNumBones; j++)
-		{
-			Bone bone;
-			//aiBone* pBone = pMesh->mBones[j];
-			bone.m_Name = pBone->mName.C_Str();
-			bone.m_Index = m_SkeletonInfo.GetBoneInfoByName(bone.m_Name)->index;
-			bone.m_ParentIndex = m_SkeletonInfo.GetBoneIndexByName(m_SkeletonInfo.Bones[bone.m_Index].ParentBoneName);
-
-			for (auto& it : m_Animations[0].m_BoneAnimations)
-			{
-				if (it.m_Name == bone.m_Name)
-				{
-					bone.m_pBoneAnimation = &it;
-				}
-			}
-
-			m_Skeleton.push_back(bone);
-		}
-	}
-}
-
-void SkeletalMesh::CreateSkeleton()
-{
 }
 
 void SkeletalMesh::LoadAnmiation(aiAnimation* pAnim, const aiScene* scene)
@@ -348,10 +380,10 @@ void SkeletalMesh::LoadAnmiation(aiAnimation* pAnim, const aiScene* scene)
 		aiNodeAnim* pNodeAnim = pAnim->mChannels[j];
 		BoneAnimation boneanim;
 		boneanim.m_Name = pNodeAnim->mNodeName.C_Str();
-		boneanim.AnimationKeys.resize(pAnim->mDuration + 1); // 애니메이션 전체 길이의 프레임 수만큼 할당
+		boneanim.AnimationKeys.resize((size_t)pAnim->mDuration + 1); // 애니메이션 전체 길이의 프레임 수만큼 할당
 		for (UINT k = 0; k < pNodeAnim->mNumPositionKeys; k++)
 		{
-			KeyFrame& keyframe = boneanim.AnimationKeys[pNodeAnim->mPositionKeys[k].mTime];
+			KeyFrame& keyframe = boneanim.AnimationKeys[(unsigned __int64)pNodeAnim->mPositionKeys[k].mTime];
 			keyframe.Position.x = pNodeAnim->mPositionKeys[k].mValue.x;
 			keyframe.Position.y = pNodeAnim->mPositionKeys[k].mValue.y;
 			keyframe.Position.z = pNodeAnim->mPositionKeys[k].mValue.z;
@@ -361,7 +393,7 @@ void SkeletalMesh::LoadAnmiation(aiAnimation* pAnim, const aiScene* scene)
 		
 		for (UINT k = 0; k < pNodeAnim->mNumRotationKeys; k++) // 같은 키프레임이라는 전제 하에
 		{
-			KeyFrame& keyframe = boneanim.AnimationKeys[pNodeAnim->mRotationKeys[k].mTime];
+			KeyFrame& keyframe = boneanim.AnimationKeys[(unsigned __int64)pNodeAnim->mRotationKeys[k].mTime];
 			keyframe.Rotation.x = pNodeAnim->mRotationKeys[k].mValue.x;
 			keyframe.Rotation.y = pNodeAnim->mRotationKeys[k].mValue.y;
 			keyframe.Rotation.z = pNodeAnim->mRotationKeys[k].mValue.z;
@@ -371,7 +403,7 @@ void SkeletalMesh::LoadAnmiation(aiAnimation* pAnim, const aiScene* scene)
 		
 		for (UINT k = 0; k < pNodeAnim->mNumScalingKeys; k++)  // 같은 키프레임이라는 전제 하에
 		{
-			KeyFrame& keyframe = boneanim.AnimationKeys[pNodeAnim->mScalingKeys[k].mTime];
+			KeyFrame& keyframe = boneanim.AnimationKeys[(unsigned __int64)pNodeAnim->mScalingKeys[k].mTime];
 			keyframe.Scale.x = pNodeAnim->mScalingKeys[k].mValue.x;
 			keyframe.Scale.y = pNodeAnim->mScalingKeys[k].mValue.y;
 			keyframe.Scale.z = pNodeAnim->mScalingKeys[k].mValue.z;
@@ -419,7 +451,7 @@ std::vector<Texture> SkeletalMesh::LoadMaterialTextures(aiMaterial* material, ai
 				hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, wfilename.c_str(), nullptr, texture.m_pTextureSRV.GetAddressOf());
 				if (FAILED(hr))
 				{
-					std::runtime_error("Texture couldn't be loaded");
+					throw std::runtime_error("Texture couldn't be loaded");
 				}
 			}
 			texture.type = typeName;
@@ -460,7 +492,7 @@ ID3D11ShaderResourceView* SkeletalMesh::LoadEmbeddedTexture(const aiTexture* emb
 		hr = m_pDevice->CreateTexture2D(&desc, &subresourcedata, &texture2D);
 		if (FAILED(hr))
 		{
-			std::runtime_error("CreatedTextture2D Failed!");
+			throw std::runtime_error("CreatedTextture2D Failed!");
 		}
 
 		hr = m_pDevice->CreateShaderResourceView(texture2D, nullptr, &texture);

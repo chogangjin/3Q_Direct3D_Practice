@@ -5,6 +5,7 @@ Texture2D txSpecular : register(t3);
 Texture2D txAmbient : register(t4);
 Texture2D txEmissive : register(t5);
 Texture2D txOpacity : register(t6);
+Texture2D txShadow : register(t7);
 SamplerState samLinear : register(s0);
 
 
@@ -15,7 +16,6 @@ cbuffer ConstantBuffer : register(b0)
     matrix Projection;
     
     float3 vDirectionalLight;
-    //flo padding;
     float4 vDirectionalColor;
     
     float4 DiffuseColor;
@@ -34,6 +34,13 @@ cbuffer ConstantBuffer : register(b0)
     float2 padding;
 }
 
+cbuffer ShadowConstantBuffer : register(b2)
+{
+    //matrix View;
+    //matrix Projection;
+    matrix ShadowView;
+    matrix ShadowProjection;
+}
 
 //#define VERTEX_SKINNING
 
@@ -68,6 +75,7 @@ struct PS_INPUT
     float3 norm : TEXCOORD2;
     float3 tangent : TEXCOORD3;
     float3 binormal : TEXCOORD4;
+    float4 shadowpos : TEXCOORD5;
 };
 
 struct VS_SKYBOX_INPUT
@@ -79,4 +87,14 @@ struct PS_SKYBOX_INPUT
 {
     float4 pos : SV_Position;
     float3 Tex : TEXCOORD0;
+};
+
+struct VS_SHADOW_INPUT
+{
+    float4 pos : POSITION;
+};
+
+struct PS_SHADOW_INPUT
+{
+    float4 pos : SV_Position;
 };

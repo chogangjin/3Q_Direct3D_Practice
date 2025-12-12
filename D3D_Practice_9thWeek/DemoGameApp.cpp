@@ -53,23 +53,32 @@ void DemoGameApp::Shutdown()
 void DemoGameApp::OnUpdate()
 {
 	elapsedTime += TimeSystem::GetInstance()->deltaTime / 1000;
-	DirectX::XMMATRIX translation1 = DirectX::XMMatrixTranslation(m_TranslationZelda.x, m_TranslationZelda.y, m_TranslationZelda.z);
-	DirectX::XMMATRIX rotation1 = DirectX::XMMatrixRotationRollPitchYaw(m_RotationZelda.x, m_RotationZelda.y, m_RotationZelda.z);
-	DirectX::XMMATRIX scale1 = DirectX::XMMatrixScaling(m_ScaleZelda.x, m_ScaleZelda.y, m_ScaleZelda.z);
-	m_WorldMatrix = scale1 * rotation1 * translation1;
+
 	m_ZeldaModel.Update(TimeSystem::GetInstance()->deltaTime);
+	m_Robot.Update(TimeSystem::GetInstance()->deltaTime);
+	m_Plain.Update(TimeSystem::GetInstance()->deltaTime);
+
 	m_Camera.GetViewMatrix(m_ViewMatrix);
-	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
+	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(
+		DirectX::XMConvertToRadians(FieldOfView),
+		(float)m_Width / m_Height,
+		m_near,
+		m_far);
+
+
 
 	// 그림자 Depth Only Pass Camera 설정
-	//if (m_bDebugShadow)
-	//{
-	//	m_ShadowProjection = XMMatrixPerspectiveFovLH(XM_PIDIV4, m_ShadowViewport.Width / (FLOAT)m_ShadowViewport.Height,
-	//		m_ShadowProjectionNearFar.x, m_ShadowProjectionNearFar.y);
-	//}
-	//m_ShadowLookAt = m_Camera.GetCameraPosition() + m_Camera.GetForward() * m_ShadowForwardDistanceFromCamera;
-	//m_ShadowPos = m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
-	//m_ShadowView = XMMatrixLookAtLH(m_ShadowPos, m_ShadowLookAt, Vector3{ 0.0f, 1.0f, 0.0f });
+	if (m_bDebugShadow)
+	{
+		m_ShadowProjection = XMMatrixPerspectiveFovLH(
+			XMConvertToRadians(m_ShadowFow),
+			m_ShadowViewport.Width / (FLOAT)m_ShadowViewport.Height,
+			m_ShadowProjectionNearFar.x, 
+			m_ShadowProjectionNearFar.y);
+	}
+	m_ShadowLookAt = Vector3(0, 0, 0);//m_Camera.GetCameraPosition() + m_Camera.GetForward() * m_ShadowForwardDistanceFromCamera;
+	m_ShadowPos = -m_DirectionalLight * 300.0f;//m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
+	m_ShadowView = XMMatrixLookAtLH(m_ShadowPos, m_ShadowLookAt, Vector3{ 0.0f, 1.0f, 0.0f });
 }
 
 LRESULT CALLBACK DemoGameApp::WndProc(HWND hWnd, UINT message, WPARAM wParameter, LPARAM lParameter)
@@ -99,17 +108,41 @@ void DemoGameApp::Render()
 	cbuffer.CameraPos = m_Camera.GetCameraPosition();
 	cbuffer.shininess = m_Shininess;
 
-	// 화면 해당 색으로 칠하기
-	// 렌더타겟을 최종 출력 파이프라인에 바인딩
-	m_pDeviceContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
-	//m_pDeviceContext->OMSetRenderTargets(0, NULL, m_pShadowMapDepthStencilView.Get());
-	m_pDeviceContext->ClearRenderTargetView(m_pRenderTargetView.Get(), color);
-	m_pDeviceContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0); // DepthStencilview 초기화, Depth버퍼 1.0f로 초기화
-	
+	TransformViewProjection shadowcbuffer = {};
+	shadowcbuffer.ShadowView = XMMatrixTranspose(m_ShadowView);
+	shadowcbuffer.ShadowProjection = XMMatrixTranspose(m_ShadowProjection);
+
+	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+
+	m_pDeviceContext->OMSetRenderTargets(0, NULL, m_pShadowMapDepthStencilView.Get());
+	m_pDeviceContext->ClearDepthStencilView(m_pShadowMapDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
 	// 정점 버퍼를 정해둔 버퍼세팅대로 정해둠
 	m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
 	m_pDeviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_VertexBufferStride, &m_VertexBufferOffset);
+	m_pDeviceContext->IASetInputLayout(m_pInputLayout.Get());							// Input Layout설정
+	//m_pDeviceContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);					// VertexShader 설정
+	m_pDeviceContext->VSSetShader(m_pShadowVertexBuffer.Get(), nullptr, 0);					// VertexShader 설정
+	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());		// ConstantBuffer 초기화
+	m_pDeviceContext->VSSetConstantBuffers(2, 1, m_pShadowBuffer.GetAddressOf());		// ConstantBuffer 초기화
+	m_pDeviceContext->PSSetShader(nullptr, nullptr, 0);					// PixelShader 설정
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
+	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
+	m_pDeviceContext->UpdateSubresource(m_pShadowBuffer.Get(), 0, nullptr, &shadowcbuffer, 0, 0);
+
+	m_pDeviceContext->RSSetViewports(1, &m_ShadowViewport);
+	m_pDeviceContext->OMSetBlendState(m_pAlphaBlendState.Get(), nullptr, 0xffffffff);
+
+	m_ZeldaModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
+
+	// 화면 해당 색으로 칠하기
+	// 렌더타겟을 최종 출력 파이프라인에 바인딩
+	m_pDeviceContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), m_pDepthStencilView.Get());
+	m_pDeviceContext->ClearRenderTargetView(m_pRenderTargetView.Get(), color);
+	m_pDeviceContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0); // DepthStencilview 초기화, Depth버퍼 1.0f로 초기화
+	m_pDeviceContext->RSSetViewports(1, &m_Viewport);
 
 	//SkyBox
 	m_pDeviceContext->OMSetDepthStencilState(m_pSkyBoxDepthStencilState.Get(), 0);
@@ -122,7 +155,7 @@ void DemoGameApp::Render()
 	m_pDeviceContext->PSSetShader(m_pSkyBoxPixelShader.Get(), nullptr, 0);
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShaderResources(1, 1, m_pSkyBoxShaderResourceView.GetAddressOf());
-	
+
 	//SkyBox가 카메라 행렬을 따라감
 	cbuffer.World = XMMatrixTranspose(DirectX::SimpleMath::Matrix::CreateTranslation(m_Camera.GetCameraPosition()));
  	
@@ -136,45 +169,15 @@ void DemoGameApp::Render()
 	m_pDeviceContext->IASetInputLayout(m_pInputLayout.Get());							// Input Layout설정
 	m_pDeviceContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);					// VertexShader 설정
 	m_pDeviceContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);					// PixelShader 설정
+	m_pDeviceContext->PSSetShaderResources(7, 1, m_pShadowMapShaderResourceView.GetAddressOf());
 	m_pDeviceContext->OMSetBlendState(m_pAlphaBlendState.Get(), nullptr , 0xffffffff);
-	
-	BoneMatrixContainer modelmatrix = {m_ZeldaModel.m_SkeletonPose};
-	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleZelda.x, m_ScaleZelda.y, m_ScaleZelda.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RotationZelda.x, m_RotationZelda.y, m_RotationZelda.z) * DirectX::XMMatrixTranslation(m_TranslationZelda.x, m_TranslationZelda.y, m_TranslationZelda.z);
-	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
-	//m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
-	//m_ZeldaModel.Draw(m_pDeviceContext.Get());
 
-	for (int i = 0; i < m_ZeldaModel.m_Meshes.size(); i++)
-	{
-		UINT stride = sizeof(Vertex);
-		UINT offset = 0;
-		m_pDeviceContext->IASetVertexBuffers(0, 1, m_ZeldaModel.m_Meshes[i].m_pVertexBuffer.GetAddressOf(), &stride, &offset);	// 버텍스 버퍼 입력 조립
-		m_pDeviceContext->IASetIndexBuffer(m_ZeldaModel.m_Meshes[i].m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_ZeldaModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
 
-		for (UINT j = 0; j < m_ZeldaModel.m_Meshes[i].m_Textures.size(); j++)
-		{
-			Texture t = m_ZeldaModel.m_Meshes[i].m_Textures[j];
-			
-			//// SRV 벡터의 첫번째 주소를 전달해서 쭉 읽도록
-			//if (t.type == "texture_diffuse") { m_pDeviceContext->PSSetShaderResources(0, 1, t.m_pTextureSRV.GetAddressOf());} // diffuse
-			//if (t.type == "texture_specular"){ m_pDeviceContext->PSSetShaderResources(3, 1, t.m_pTextureSRV.GetAddressOf());} // specular
-			//if (t.type == "texture_ambient") { m_pDeviceContext->PSSetShaderResources(4, 1, t.m_pTextureSRV.GetAddressOf());} // ambient
-			//if (t.type == "texture_emissive"){ m_pDeviceContext->PSSetShaderResources(5, 1, t.m_pTextureSRV.GetAddressOf());} // emissive
-			//m_pDeviceContext->PSSetShaderResources(6, 1, t.m_pTextureSRV.GetAddressOf()); // opacity
-			m_pDeviceContext->PSSetShaderResources(0, 1, t.m_pTextureSRV.GetAddressOf());
-		}
-		
-		cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
-		cbuffer.RefBoneIndex = m_ZeldaModel.m_Meshes[i].m_RefBoneIndex;
-		m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.  Get(), 0, nullptr, &cbuffer,0, 0);
-		m_pDeviceContext->UpdateSubresource(m_pBonePoseBuffer.Get(), 0, nullptr, &m_ZeldaModel.m_SkeletonPose, 0, 0);
-		m_pDeviceContext->UpdateSubresource(m_pBoneOffsetBuffer.Get(), 0, nullptr, &m_ZeldaModel.m_SkeletonInfo.m_BoneOffsetMatrices, 0, 0);
-		//TODO : UpdateSubresource/ vssetconstantbuffer/ pssetconstantbuffer  m_poffsetmatrixbuffer사용
-		m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.  GetAddressOf());
-		m_pDeviceContext->VSSetConstantBuffers(3, 1, m_pBonePoseBuffer.GetAddressOf());
-		m_pDeviceContext->VSSetConstantBuffers(4, 1, m_pBoneOffsetBuffer.GetAddressOf());
-		m_pDeviceContext->DrawIndexed(static_cast<UINT>(m_ZeldaModel.m_Meshes[i].m_Indices.size()), 0, 0);
-	}
+	ID3D11ShaderResourceView* nullView = nullptr;
+	m_pDeviceContext->PSSetShaderResources(7, 1, &nullView);
 
 	//ImGUI 사용
 	ImGuiBeginDraw();
@@ -262,22 +265,22 @@ bool DemoGameApp::InitD3D()
 	m_pDevice->CreateRenderTargetView(BackBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf());
 
 	// 뷰포트 설정
-	D3D11_VIEWPORT viewport = {};
-	viewport.TopLeftX = 0;
-	viewport.TopLeftY = 0;
-	viewport.Width = (float)m_Width;
-	viewport.Height = (float)m_Height;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-	m_pDeviceContext->RSSetViewports(1, &viewport);
+	//D3D11_VIEWPORT viewport = {};
+	m_Viewport.TopLeftX = 0;
+	m_Viewport.TopLeftY = 0;
+	m_Viewport.Width = (float)m_Width;
+	m_Viewport.Height = (float)m_Height;
+	m_Viewport.MinDepth = 0.0f;
+	m_Viewport.MaxDepth = 1.0f;
+	m_pDeviceContext->RSSetViewports(1, &m_Viewport);
 
-	//// ShadowMap Viewport 생성
-	//m_ShadowViewport.TopLeftX = 0;
-	//m_ShadowViewport.TopLeftY = 0;
-	//m_ShadowViewport.Width = 8192;
-	//m_ShadowViewport.Height = 8192;
-	//m_ShadowViewport.MinDepth = 0.0f;
-	//m_ShadowViewport.MaxDepth = 1.0f;
+	// ShadowMap Viewport 생성
+	m_ShadowViewport.TopLeftX = 0;
+	m_ShadowViewport.TopLeftY = 0;
+	m_ShadowViewport.Width = 8192;
+	m_ShadowViewport.Height = 8192;
+	m_ShadowViewport.MinDepth = 0.0f;
+	m_ShadowViewport.MaxDepth = 1.0f;
 	//m_pDeviceContext->RSSetViewports(1, &m_ShadowViewport);
 	 
 	// Depth / Stencil View 생성
@@ -317,33 +320,32 @@ bool DemoGameApp::InitD3D()
 	skyboxDepthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL; // 깊이데이터를 기존 깊이 데이터와 비교, 원본 데이터가 대상데이터보다 작거나 같으면 비교 통과
 	m_pDevice->CreateDepthStencilState(&skyboxDepthStencilDesc, m_pSkyBoxDepthStencilState.GetAddressOf());
 
-	////Shadow map 생성
-	//D3D11_TEXTURE2D_DESC textureDesc = {};
-	//textureDesc.Width = (UINT)m_ShadowViewport.Width; // 텍스쳐 해상도
-	//textureDesc.Height = (UINT)m_ShadowViewport.Height;
-	//textureDesc.MipLevels = 1;
-	//textureDesc.ArraySize = 1;
-	//textureDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-	//textureDesc.SampleDesc.Count = 1;
-	//textureDesc.SampleDesc.Quality = 0;
-	//textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	////                      깊이값 기록 용도          | 셰이더에서 텍스쳐 슬롯에 설정할 용도
-	//textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE; 
-	//HR_T(m_pDevice->CreateTexture2D(&textureDesc, nullptr, m_pShadowMap.GetAddressOf()));
+	//Shadow map 생성
+	D3D11_TEXTURE2D_DESC textureDesc = {};
+	textureDesc.Width = (UINT)m_ShadowViewport.Width; // 텍스쳐 해상도
+	textureDesc.Height = (UINT)m_ShadowViewport.Height;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_R32_TYPELESS; // Depth + Shader Resource호환
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	//                      깊이값 기록 용도          | 셰이더에서 텍스쳐 슬롯에 설정할 용도
+	textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE; 
+	HR_T(m_pDevice->CreateTexture2D(&textureDesc, nullptr, m_pShadowMap.GetAddressOf()));
 
-	//// 그림자 전용 depth/stencil state 생성
-	//depthStencilViewDesc = {};
-	//depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
-	//depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	//HR_T(m_pDevice->CreateDepthStencilView(m_pShadowMap.Get(), &depthStencilViewDesc, m_pShadowMapDepthStencilView.GetAddressOf()));
-	//
+	// 그림자 전용 depth/stencil state 생성
+	depthStencilViewDesc = {};
+	depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	HR_T(m_pDevice->CreateDepthStencilView(m_pShadowMap.Get(), &depthStencilViewDesc, m_pShadowMapDepthStencilView.GetAddressOf()));
 
-	//// 그림자 ShaderResourceView 생성
-	//D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
-	//shaderResourceViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	//shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	//shaderResourceViewDesc.Texture2D.MipLevels = 1;
-	//HR_T(m_pDevice->CreateShaderResourceView(m_pShadowMap.Get(), &shaderResourceViewDesc, m_pShadowMapShaderResourceView.GetAddressOf())); // 깊이값 기록을 설정하기 위한 객체
+	// 그림자 ShaderResourceView 생성
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
+	shaderResourceViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderResourceViewDesc.Texture2D.MipLevels = 1;
+	HR_T(m_pDevice->CreateShaderResourceView(m_pShadowMap.Get(), &shaderResourceViewDesc, m_pShadowMapShaderResourceView.GetAddressOf())); // 깊이값 기록을 설정하기 위한 객체
 
 	// Rasterizer State
 	D3D11_RASTERIZER_DESC rasterizerDesc = {};
@@ -382,6 +384,7 @@ bool DemoGameApp::InitScene()
 {
 	// Render에서 파이프라인에 바인딩할 버텍스 셰이더 생성
 	ComPtr<ID3DBlob> vertexShaderBufffer = nullptr; // 버텍스 셰이더 HLSL의 컴파일된 결과를 담을 수 있는 버퍼 객체
+	
 	// 컴파일할 셰이더 파일의 이름과 함수, 버전 선택
 	HR_T(CompileShaderFromFile(L"VertexShader.hlsl", "main", "vs_5_0", vertexShaderBufffer.GetAddressOf()));
 	HR_T(m_pDevice->CreateVertexShader(vertexShaderBufffer->GetBufferPointer(), // 
@@ -407,9 +410,9 @@ bool DemoGameApp::InitScene()
 		m_pInputLayout.GetAddressOf()));
 
 	vertexShaderBufffer = nullptr;
-	//HR_T(CompileShaderFromFile(L"ShadowVertexShader.hlsl", "main", "vs_5_0", vertexShaderBufffer.GetAddressOf()));
-	//HR_T(m_pDevice->CreateVertexShader(vertexShaderBufffer->GetBufferPointer(),
-	//	vertexShaderBufffer->GetBufferSize(), NULL, m_pVertexShader.GetAddressOf()));
+	HR_T(CompileShaderFromFile(L"ShadowVertexShader.hlsl", "main", "vs_5_0", vertexShaderBufffer.GetAddressOf()));
+	HR_T(m_pDevice->CreateVertexShader(vertexShaderBufffer->GetBufferPointer(),
+		vertexShaderBufffer->GetBufferSize(), NULL, m_pShadowVertexBuffer.GetAddressOf()));
 
 	/*D3D11_INPUT_ELEMENT_DESC ShadowInputLayout[] =
 	{
@@ -459,6 +462,7 @@ bool DemoGameApp::InitScene()
 	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	cbDesc.CPUAccessFlags = 0;
 	HR_T(m_pDevice->CreateBuffer(&cbDesc, nullptr, m_pShadowBuffer.GetAddressOf()));
+	m_pDeviceContext->VSSetConstantBuffers(2, 1, m_pShadowBuffer.GetAddressOf());
 
 	ComPtr<ID3D11Resource> skycubeTexture = nullptr;
 	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/cubemap.dds", skycubeTexture.GetAddressOf(), m_pSkyBoxShaderResourceView.GetAddressOf()));
@@ -474,26 +478,31 @@ bool DemoGameApp::InitScene()
 	samplerStateDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	HR_T(m_pDevice->CreateSamplerState(&samplerStateDesc, m_pSamplerState.GetAddressOf()));
 
-
 	//light 받는 면적 조정
-	m_Shininess = 10;
+	m_Shininess = 2;
 
 	//카메라 이동 속도
 	m_Camera.m_MoveSpeed = 500;
 
 	//fov 초기화
-	fovWidht = m_Width;
-	fovHeight = m_Height;
+	fovWidht =  (float)m_Width;
+	fovHeight = (float)m_Height;
 	FieldOfView = 90;
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
 
 	//fbx 파일 로드
 	m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
 	//m_ZeldaModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Wave Hip Hop Dance.fbx");
-	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
-	//m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/plain.fbx");
+	//m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
+	m_Robot.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
+	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plain.fbx");
+	
 	//스카이큐브 설정
 	SetCube();
+
+	//그림자 fov 설정
+	m_ShadowProjectionNearFar.x = 100.0f;
+	m_ShadowProjectionNearFar.y = 500.0f;
 
 	return true;
 }
@@ -624,15 +633,12 @@ void DemoGameApp::SetCube()
 	ibData.pSysMem = indices;
 	HR_T(m_pDevice->CreateBuffer(&ibDesc, &ibData, m_pIndexBuffer.GetAddressOf()));
 
-	
-
 	// 스카이박스 전용 픽셀셰이더 생성
 	ComPtr<ID3DBlob> skyboxPixelShaderBuffer = nullptr;
 	HR_T(CompileShaderFromFile(L"SkyBoxPixelShader.hlsl", "main", "ps_4_0", skyboxPixelShaderBuffer.GetAddressOf()));
 	HR_T(m_pDevice->CreatePixelShader(
 		skyboxPixelShaderBuffer->GetBufferPointer(),
 		skyboxPixelShaderBuffer->GetBufferSize(), NULL, m_pSkyBoxPixelShader.GetAddressOf()));
-
 	}
 
 //Imgui 설정
@@ -665,11 +671,22 @@ void DemoGameApp::ImGuiBeginDraw()
 
 void DemoGameApp::ImGuiRender()
 {
-	ImGui::Begin("7th Week");
-	ImGui::SeparatorText("Robot");
-	ImGui::DragFloat3("Robot Position", &m_TranslationZelda.x, 1.0f, -100.0f, 100.0f);
-	ImGui::DragFloat3("Robot Rotation", &m_RotationZelda.x, 0.01f, -360.0f, 360.0f);
-	ImGui::DragFloat3("Robot Scale", &m_ScaleZelda.x, 0.1f, 0.1f, 100.0f);
+	ImGui::Begin("9th Week");
+	ImGui::SeparatorText("Skinning");
+	ImGui::DragFloat3("Mixamo Position", &m_ZeldaModel.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
+	ImGui::DragFloat3("Mixamo Rotation", &m_ZeldaModel.m_Rotation.x, 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("Mixamo Scale", &m_ZeldaModel.m_Scale.x, 0.1f, 0.1f, 100.0f);
+	
+	ImGui::SeparatorText("BoxHuman");
+	ImGui::DragFloat3("Robot Position", &m_Robot.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
+	ImGui::DragFloat3("Robot Rotation", &m_Robot.m_Rotation.x, 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("Robot Scale", &m_Robot.m_Scale.x, 0.1f, 0.1f, 100.0f);
+
+	ImGui::SeparatorText("Plain");
+	ImGui::DragFloat3("Plain Position", &m_Plain.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
+	ImGui::DragFloat3("Plain Rotation", &m_Plain.m_Rotation.x, 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("Plain Scale", &m_Plain.m_Scale.x, 0.1f, 0.1f, 100.0f);
+	
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
@@ -685,12 +702,21 @@ void DemoGameApp::ImGuiRender()
 	ImGui::ColorEdit4("Specular Material", &m_SpecularMaterial.x);
 	ImGui::DragFloat("Shininess", &m_Shininess, 0.1f, 0.0f, 10000.0f);
 
+
 	ImGui::NewLine();
 	ImGui::SeparatorText("Camera Setting");
 	ImGui::DragFloat("Near", &m_near, 0.1f, 0.1f, m_far - 0.2f);
 	ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
 	ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
+	ImGui::End();
 
+	//For Debug Shadow
+	ImGui::Begin("DebugShadow");
+	ImGui::SeparatorText("Near Far");
+	ImGui::DragFloat("Shadow Near", &m_ShadowProjectionNearFar.x, 0.1f, 0.1f, m_ShadowProjectionNearFar.y- 0.2f);
+	ImGui::DragFloat("Shadow Far", &m_ShadowProjectionNearFar.y, 0.1f, m_ShadowProjectionNearFar.x + 0.2f, 1000.0f);
+	ImGui::DragFloat("Shadow Fov", &m_ShadowFow, 0.1f);
+	ImGui::Image((ImTextureID)(intptr_t)m_pShadowMapShaderResourceView.Get(), ImVec2(300, 300));
 	ImGui::End();
 }
 

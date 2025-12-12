@@ -28,7 +28,7 @@ struct ConstantBuffer
 	Vector3 CameraPos;
 	float shininess;
 
-	UINT IsRigid;
+	bool IsRigid;
 	UINT RefBoneIndex;
 	Vector2 Padding;
 };
@@ -39,8 +39,6 @@ struct BoneMatrixContainer
 
 struct TransformViewProjection
 {
-	Matrix View;
-	Matrix Projection;
 	Matrix ShadowView;
 	Matrix ShadowProjection;
 };
@@ -85,7 +83,7 @@ struct BoneWeightVertex
 	Vector3 Tangent;
 
 	int BlendIndices[4] = {};
-	int BlendWeights[4] = {};
+	float BlendWeights[4] = {};
 
 	void AddBoneData(int index, float weight)
 	{
@@ -281,7 +279,7 @@ public:
 	{
 		D3D11_BUFFER_DESC wvBuffer = {};
 		wvBuffer.Usage = D3D11_USAGE_IMMUTABLE;
-		wvBuffer.ByteWidth = static_cast<UINT>(sizeof(BoneWeightVertex)) * boneweightvertex.size();
+		wvBuffer.ByteWidth = static_cast<UINT>(sizeof(BoneWeightVertex)) * static_cast<UINT>(boneweightvertex.size());
 		wvBuffer.BindFlags = D3D11_BIND_INDEX_BUFFER;
 		wvBuffer.CPUAccessFlags = 0;
 		wvBuffer.MiscFlags = 0;

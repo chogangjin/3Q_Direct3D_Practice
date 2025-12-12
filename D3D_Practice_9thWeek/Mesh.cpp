@@ -11,10 +11,10 @@ void SkeletonInfo::CreateBoneInfo(const aiNode* pNode, const aiScene* pScene)
     BoneInfo boneinfo(pNode);
     boneinfo.Name = pNode->mName.C_Str();
     boneinfo.ParentBoneName = pNode->mParent->mName.C_Str();
-    boneinfo.index = Bones.size();
+    boneinfo.index = (int)Bones.size();
     Bones.push_back(boneinfo);
     m_BoneMappingTable.insert({boneinfo.Name, boneinfo.index});
-    for (int i = 0; i < pNode->mNumChildren; i++)
+    for (unsigned int i = 0; i < pNode->mNumChildren; i++)
     {
         CreateBoneInfo(pNode->mChildren[i], pScene);
     }

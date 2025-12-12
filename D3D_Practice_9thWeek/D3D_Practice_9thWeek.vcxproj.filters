@@ -85,6 +85,9 @@
     <FxCompile Include="VertexShader.hlsl">
       <Filter>Shaders\Basic</Filter>
     </FxCompile>
+    <FxCompile Include="ShadowVertexShader.hlsl">
+      <Filter>Shaders\Shadow</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shared.fxh">

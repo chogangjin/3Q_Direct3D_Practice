@@ -10,7 +10,7 @@ PS_SKYBOX_INPUT main(VS_SKYBOX_INPUT pos)
     output.pos = mul(output.pos, Projection);
     output.pos = output.pos.xyww;
     
-    output.Tex = pos.pos;
+    output.Tex = (float3) pos.pos;
     
 	return output;
 }

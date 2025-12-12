@@ -36,6 +36,7 @@ public :
 	//렌더링 파이프라인에 사용되는 정보들 
 	ComPtr<ID3D11VertexShader> m_pVertexShader = nullptr; // 버텍스 셰이더
 	ComPtr<ID3D11VertexShader> m_pSkyBoxVertexShader = nullptr;
+	ComPtr<ID3D11VertexShader> m_pShadowVertexBuffer = nullptr;
 	ComPtr<ID3D11PixelShader> m_pPixelShader = nullptr;   // 픽셀 셰이더
 	ComPtr<ID3D11PixelShader> m_pSkyBoxPixelShader = nullptr;
 	ComPtr<ID3D11InputLayout> m_pInputLayout = nullptr;   // 인풋 레이아웃
@@ -59,30 +60,31 @@ public :
 	UINT m_VertexBufferOffset = 0; // 버텍스 한개에 대한 설정
 	UINT m_VertexCount = 0; // 버텍스 개수
 	int m_Indices = 0;
-
-	//fbx SRT
-	Vector3 m_ScaleZelda{ 1,1,1 };
-	Vector3 m_RotationZelda{ 0,0,0 };
-	Vector3 m_TranslationZelda{ 0,0,0 };
+	D3D11_VIEWPORT m_Viewport = {};
 
 	// 공간별 행렬
 	Matrix m_WorldMatrix = DirectX::XMMatrixIdentity();
 	Matrix m_ViewMatrix; // 카메라 매트릭스
 	Matrix m_ProjectionMatrix;
 
+	// 그림자 행렬
+
 	// 그림자 관련 멤버변수
 	D3D11_VIEWPORT m_ShadowViewport;
-	Vector3 m_ShadowPos;
-	Vector3 m_ShadowLookAt;
+	Vector3 m_ShadowPos  = Vector3::Zero;
+	Vector3 m_ShadowLookAt = Vector3::Zero;
+	Matrix m_LightView = DirectX::XMMatrixIdentity();
+	Matrix m_LightProjection = DirectX::XMMatrixIdentity();
 	ComPtr<ID3D11Texture2D> m_pShadowMap = nullptr; // 그림자 맵핑을
 
-	Matrix m_ShadowView;
-	Matrix m_ShadowProjection;
+	Matrix  m_ShadowView;
+	Matrix  m_ShadowProjection;
 	Vector2 m_ShadowProjectionNearFar;
-	Vector3 m_ShadowForwardDistanceFromCamera;
-	Vector3 m_ShadowUpDistanceFromLookAt;
+	float m_ShadowFow = 90.0f;
+	Vector3 m_ShadowForwardDistanceFromCamera = { 300.0f, 300.0f, 300.0f };
+	Vector3 m_ShadowUpDistanceFromLookAt = {0,100,0};
 
-	Vector3 m_DirectionalLight = Vector3{ 0.0f, 0.0f, 1.0f};
+	Vector3 m_DirectionalLight = Vector3{ 0.0f, -1.0f, 1.0f};
 	Vector4 m_DiffuseColor{ 0.9f,0.9f,0.9f,0.9f };
 	Vector4 m_DiffuseMaterial{ 0.9f,0.9f,0.9f,1.0f };
 	Vector4 m_AmbientColor{ 0.1f,0.1f,0.1f,1.0f };
@@ -101,9 +103,10 @@ public :
 	float elapsedTime = 0;
 
 	SkeletalMesh m_ZeldaModel;
+	SkeletalMesh m_Robot;
 	SkeletalMesh m_Plain;
 
-	bool m_bDebugShadow = false;
+	bool m_bDebugShadow = true;
 
 	bool Initialize() override;
 	void LateInitialize() override;

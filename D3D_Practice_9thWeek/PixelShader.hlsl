@@ -35,9 +35,32 @@ float4 main(PS_INPUT input) : SV_TARGET
     
     //alpha
     
+    float4 directLight = saturate(Diffuse + Specular);
+    
+    //Shadow
+    float currentShadowDepth = input.shadowpos.z / input.shadowpos.w;
+    
+    float2 uv = input.shadowpos.xy / input.shadowpos.w;
+    
+    uv.y = -uv.y;
+    uv = uv * 0.5 + 0.5;
+    
+    
+    if(uv.x >= 0.0f && uv.x <=1.0f && uv.y >= 0.0f && uv.y < 1.0f)
+    {
+        float sampleShadowDepth = txShadow.Sample(samLinear, uv).r;
+        
+        if(currentShadowDepth > sampleShadowDepth + 0.001f)
+        {
+            directLight = 0.0f;
+        }
+    }
+    
+    
+    
     // 최종 출력
     float4 finalColor = 0;
-    finalColor = saturate(Diffuse + Ambient + Specular);
+    finalColor = saturate(directLight + Ambient);
     //finalColor.a *= opacity;
     finalColor.a = 1;
     return finalColor;
