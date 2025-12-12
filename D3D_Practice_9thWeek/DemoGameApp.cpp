@@ -77,7 +77,7 @@ void DemoGameApp::OnUpdate()
 			m_ShadowProjectionNearFar.y);
 	}
 	m_ShadowLookAt = m_Camera.GetCameraPosition() + m_Camera.GetForward() * m_ShadowForwardDistanceFromCamera;
-	m_ShadowPos = /*-m_DirectionalLight * 300.0f;*/m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
+	m_ShadowPos = m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
 	m_ShadowView = XMMatrixLookAtLH(m_ShadowPos, m_ShadowLookAt, Vector3{ 0.0f, 1.0f, 0.0f });
 }
 
@@ -280,7 +280,6 @@ bool DemoGameApp::InitD3D()
 	m_ShadowViewport.Height = 8192;
 	m_ShadowViewport.MinDepth = 0.0f;
 	m_ShadowViewport.MaxDepth = 1.0f;
-	//m_pDeviceContext->RSSetViewports(1, &m_ShadowViewport);
 	 
 	// Depth / Stencil View 생성
 	D3D11_TEXTURE2D_DESC depthDesc = {};
@@ -489,6 +488,8 @@ bool DemoGameApp::InitScene()
 	m_Robot.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
 	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plain.fbx");
 	
+	m_Plain.m_Scale *= 10;
+
 	//스카이큐브 설정
 	SetCube();
 
@@ -701,6 +702,9 @@ void DemoGameApp::ImGuiRender()
 
 	//For Debug Shadow
 	ImGui::Begin("DebugShadow");
+	ImGui::Text("Distance");
+	ImGui::DragFloat("Distance from Camera", &m_ShadowForwardDistanceFromCamera, 0.1f, 0.1f, 1000.0f);
+	ImGui::DragFloat("Distance from LookAt", &m_ShadowUpDistanceFromLookAt, 0.1f, 0.1f, 1000.0f);
 	ImGui::SeparatorText("Shadow Near Far");
 	ImGui::DragFloat("Shadow Near", &m_ShadowProjectionNearFar.x, 0.1f, 0.1f, m_ShadowProjectionNearFar.y- 0.2f);
 	ImGui::DragFloat("Shadow Far", &m_ShadowProjectionNearFar.y, 0.1f, m_ShadowProjectionNearFar.x + 0.2f, 1000.0f);

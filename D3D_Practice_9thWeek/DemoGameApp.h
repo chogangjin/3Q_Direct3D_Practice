@@ -82,8 +82,8 @@ public :
 	//그림자 fov 설정
 	Vector2 m_ShadowProjectionNearFar{ 100.0f, 100000.0f };
 	float m_ShadowFow = 50.0f;
-	float m_ShadowForwardDistanceFromCamera = 300.0f;
-	float m_ShadowUpDistanceFromLookAt = 100;
+	float m_ShadowForwardDistanceFromCamera = 100.0f;
+	float m_ShadowUpDistanceFromLookAt = 400;
 
 	Vector3 m_DirectionalLight = Vector3{ 0.0f, -1.0f, 1.0f};
 	Vector4 m_DiffuseColor{ 0.9f,0.9f,0.9f,0.9f };

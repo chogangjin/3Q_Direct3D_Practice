@@ -154,19 +154,18 @@ void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstan
 
 		pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
 		pCBuffer->RefBoneIndex = m_Meshes[i].m_RefBoneIndex;
-		m_pDeviceContext->UpdateSubresource(pConstantBuffer, 0, nullptr, pCBuffer, 0, 0);
-		m_pDeviceContext->UpdateSubresource(pBonePoseBuffer, 0, nullptr, &m_SkeletonPose, 0, 0);
-		m_pDeviceContext->UpdateSubresource(pBoneOffsetBuffer, 0, nullptr, &m_SkeletonInfo.m_BoneOffsetMatrices, 0, 0);
-		
 		 //TODO : UpdateSubresource / VSSetConstantBuffers / pssetconstantbuffer  m_poffsetmatrixbuffer»ç¿ë
 		m_pDeviceContext->VSSetConstantBuffers(0, 1, &pConstantBuffer);
 		m_pDeviceContext->VSSetConstantBuffers(3, 1, &pBonePoseBuffer);
-		
 		if(!m_IsRigid)
 		{
 			m_pDeviceContext->VSSetConstantBuffers(4, 1, &pBoneOffsetBuffer);
 		}
-		
+
+		m_pDeviceContext->UpdateSubresource(pConstantBuffer, 0, nullptr, pCBuffer, 0, 0);
+		m_pDeviceContext->UpdateSubresource(pBonePoseBuffer, 0, nullptr, &m_SkeletonPose, 0, 0);
+		m_pDeviceContext->UpdateSubresource(pBoneOffsetBuffer, 0, nullptr, &m_SkeletonInfo.m_BoneOffsetMatrices, 0, 0);
+
 		m_pDeviceContext->DrawIndexed(static_cast<UINT>(m_Meshes[i].m_Indices.size()), 0, 0);
 	}
 }
