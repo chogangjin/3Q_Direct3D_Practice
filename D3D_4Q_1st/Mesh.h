@@ -80,7 +80,7 @@ public:
 			{
 				deviceContext->PSSetShaderResources(7, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
-			else if (m_Textures[i].type == "texture_roughness")
+			else if (m_Textures[i].type == "texture_                                                            ")
 			{
 				deviceContext->PSSetShaderResources(8, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}

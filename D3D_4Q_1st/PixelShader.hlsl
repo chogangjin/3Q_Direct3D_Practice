@@ -53,7 +53,7 @@ float4 main(PS_INPUT input) : SV_TARGET
     float Rough = txRoughness.Sample(samLinear, input.Tex).r;
     if (overridematerial)
     {
-        Rough = roughness;
+        Rough = max(roughness, 0.01f);
     }
     
     // vector
