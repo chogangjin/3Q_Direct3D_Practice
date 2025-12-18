@@ -21,13 +21,13 @@ bool SkeletalMesh::LoadModel(HWND hwnd, ID3D11Device* device, ID3D11DeviceContex
 	Assimp::Importer importer = {};
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0); // assimp의 불필요한 bone을 제거해주는 함수
 	unsigned int importFlags = aiProcess_Triangulate | // vertex를 삼각형으로 출력
-	aiProcess_GenNormals | // Normal 생성
-	aiProcess_GenUVCoords | // UV 좌표 생성
-	aiProcess_CalcTangentSpace | // 탄젠트 벡터 생성
-	aiProcess_LimitBoneWeights| // 본의 영향을 받는 정점의 최대 개수를 4개로 제한
-	aiProcess_ConvertToLeftHanded |// 왼손 좌표계 
-	aiProcessPreset_TargetRealtime_Fast;
-	//aiProcess_PreTransformVertices; // 노드의 변환행렬을 미리 적용 -> StaticMesh로 처리할때만 사용 -> animation에서 미사용
+		aiProcess_GenNormals | // Normal 생성
+		aiProcess_GenUVCoords | // UV 좌표 생성
+		aiProcess_CalcTangentSpace | // 탄젠트 벡터 생성
+		aiProcess_LimitBoneWeights | // 본의 영향을 받는 정점의 최대 개수를 4개로 제한
+		aiProcess_ConvertToLeftHanded |// 왼손 좌표계 
+		aiProcessPreset_TargetRealtime_Fast;
+		//aiProcess_PreTransformVertices; // 노드의 변환행렬을 미리 적용 -> StaticMesh로 처리할때만 사용 -> animation에서 미사용
 	
 	const aiScene* pScene = importer.ReadFile(_filepath, importFlags); // 파일 정보를 aiscene에 담음
 	

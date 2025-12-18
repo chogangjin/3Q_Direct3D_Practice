@@ -121,58 +121,66 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 		}
 	}
 	
-	for (int i = 0; i < mesh->mMaterialIndex+1; i++)
-	{
-		
-	}
 	if (mesh->mMaterialIndex >= 0) // 머티리얼이 존재한다면
 	{
 		aiMaterial* pMaterial = scene->mMaterials[mesh->mMaterialIndex];
 		std::string aistr = pMaterial->GetName().C_Str();
 		aiString astr;
-		//pMaterial->GetTexture()
+
 		// 텍스쳐 맵이 하나씩만 있다고 가정할때, 
 		if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_DIFFUSE); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_DIFFUSE, "texture_diffuse", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_DIFFUSE, "texture_diffuse", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
 		}
+		else
+		{
+			HRESULT hr;
+			Texture t = { "texture_diffuse","../Resources/Default_Material.png", nullptr };
+			std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+			if (FAILED(hr))
+			{
+				std::runtime_error("Texture couldn't be loaded");
+			}
+			textures.push_back(t);
+		}
+		
 		if (pMaterial->GetTexture(aiTextureType_NORMALS, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_NORMALS); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_NORMALS, "texture_normal", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_NORMALS, "texture_normal", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
+			m_HasNormalMap = true;
 		}
+		else
+		{
+			//HRESULT hr;
+			//Texture t = { "texture_normal","../Resources/DefaultNormalMap.png", nullptr };
+			//std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+			//hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+			//if (FAILED(hr))
+			//{
+			//	std::runtime_error("Texture couldn't be loaded");
+			//}
+			//textures.push_back(t);
+		}
+
 		if (pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_AMBIENT); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_AMBIENT, "texture_ambient", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_AMBIENT, "texture_ambient", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
 		}
-		
+
 		if (pMaterial->GetTexture(aiTextureType_SPECULAR, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SPECULAR); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_SPECULAR, "texture_specular", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_SPECULAR, "texture_specular", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
 		}
-		
+
 		if (pMaterial->GetTexture(aiTextureType_OPACITY, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_OPACITY); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_OPACITY, "texture_opacity", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_OPACITY, "texture_opacity", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
 		}
 		else
 		{
@@ -186,34 +194,53 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 			}
 			textures.push_back(t);
 		}
-			
+
 		if (pMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_EMISSIVE); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_EMISSIVE, "texture_emissive", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_EMISSIVE, "texture_emissive", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
 		}
-
-
 
 		if (pMaterial->GetTexture(aiTextureType_METALNESS, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_METALNESS); i++)
-			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_METALNESS, "texture_metalness", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
-			}
+			//for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_METALNESS); i++)
+			//{
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_METALNESS, "texture_metalness", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
+			//}
 		}
-		
+		else
+		{
+			HRESULT hr;
+			Texture t = { "texture_metalness","../Resources/Default_Material.png", nullptr };
+			std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+			if (FAILED(hr))
+			{
+				std::runtime_error("Texture couldn't be loaded");
+			}
+			textures.push_back(t);
+		}
+
 		if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &astr) == AI_SUCCESS)
 		{
-			for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SHININESS); i++)
+			//for (int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SHININESS); i++)
+			//{
+			std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_SHININESS, "texture_roughness", scene);
+			textures.insert(textures.end(), Maps.begin(), Maps.end());
+			//}
+		}
+		else
+		{
+			HRESULT hr;
+			Texture t = { "texture_roughness","../Resources/Default_Material.png", nullptr };
+			std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+			if (FAILED(hr))
 			{
-				std::vector<Texture> Maps = this->loadMaterialTextures(pMaterial, aiTextureType_SHININESS, "texture_roughness", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				std::runtime_error("Texture couldn't be loaded");
 			}
+			textures.push_back(t);
 		}
 	}
 
@@ -263,7 +290,6 @@ std::vector<Texture> ModelLoader::loadMaterialTextures(aiMaterial* material, aiT
 					hr = DirectX::CreateTexture(m_pDevice, image.GetImages(), image.GetImageCount(), metadata, &textureresource);
 
 					hr = m_pDevice->CreateShaderResourceView(textureresource.Get(), nullptr, texture.m_pTextureSRV.GetAddressOf());
-					
 				}
 				else
 				{

@@ -121,10 +121,10 @@ void DemoGameApp::Render()
 	m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // 정점을 이어서 그리는 방식
 	m_pDeviceContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &m_VertexBufferStride, &m_VertexBufferOffset);
 	m_pDeviceContext->IASetInputLayout(m_pInputLayout.Get());							// Input Layout설정
-	m_pDeviceContext->VSSetShader(m_pShadowVertexBuffer.Get(), nullptr, 0);					// VertexShader 설정
+	m_pDeviceContext->VSSetShader(m_pShadowVertexBuffer.Get(), nullptr, 0);				// VertexShader 설정
 	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());		// ConstantBuffer 초기화
 	m_pDeviceContext->VSSetConstantBuffers(2, 1, m_pShadowBuffer.GetAddressOf());		// ConstantBuffer 초기화
-	m_pDeviceContext->PSSetShader(nullptr, nullptr, 0);					// PixelShader 설정
+	m_pDeviceContext->PSSetShader(nullptr, nullptr, 0);									// PixelShader 설정
 	m_pDeviceContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_pDeviceContext->UpdateSubresource(m_pShadowBuffer.Get(), 0, nullptr, &shadowcbuffer, 0, 0);
@@ -134,6 +134,7 @@ void DemoGameApp::Render()
 
 	m_SkinningModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_PBRModel.Draw(&cbuffer, m_pConstantBuffer.Get());
 	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
 
 	// 화면 해당 색으로 칠하기
@@ -173,6 +174,7 @@ void DemoGameApp::Render()
 
 	m_SkinningModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
+	m_PBRModel.Draw(&cbuffer, m_pConstantBuffer.Get());
 	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
 
 	ID3D11ShaderResourceView* nullView = nullptr;
@@ -487,7 +489,8 @@ bool DemoGameApp::InitScene()
 	m_SkinningModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
 	m_Robot.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
 	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plain.fbx");
-	
+	m_PBRModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/char.fbx");
+
 	m_Plain.m_Scale *= 10;
 
 	//스카이큐브 설정
@@ -511,43 +514,43 @@ void DemoGameApp::SetCube()
 
 	SkyBoxVertex vertices[] =
 	{
-		//라이팅 큐브
-			//노말벡터가 Y+방향
-			//                   position                texture         
-			SkyBoxVertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 0
-			SkyBoxVertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 1
-			SkyBoxVertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 2
-			SkyBoxVertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 3
-												   
-			//Normal벡터가 Y-방향										 
-			SkyBoxVertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 4
-			SkyBoxVertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 5
-			SkyBoxVertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 6
-			SkyBoxVertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 7
-			
-			//Normal벡터가 X- 방향										 
-			SkyBoxVertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 8
-			SkyBoxVertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 9
-			SkyBoxVertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 10
-			SkyBoxVertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 11
-			
-			//Normal벡터가 X+ 방향										 
-			SkyBoxVertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 12
-			SkyBoxVertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 13
-			SkyBoxVertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 14
-			SkyBoxVertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 15
-			
-			//Normal벡터가 Z- 방향										 
-			SkyBoxVertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 16
-			SkyBoxVertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 17
-			SkyBoxVertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 18
-			SkyBoxVertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 19
-			
-			//벡터가 Z+방향										 
-			SkyBoxVertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 20
-			SkyBoxVertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 21
-			SkyBoxVertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 22
-			SkyBoxVertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 23
+		//SkyBox
+		//Normal Y+
+		//                   position                texture         
+		SkyBoxVertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 0
+		SkyBoxVertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 1
+		SkyBoxVertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 2
+		SkyBoxVertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 3
+		
+		//Normal Y-
+		SkyBoxVertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 4
+		SkyBoxVertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 5
+		SkyBoxVertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 6
+		SkyBoxVertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 7
+		
+		//Normal X-
+		SkyBoxVertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 8
+		SkyBoxVertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 9
+		SkyBoxVertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 10
+		SkyBoxVertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 11
+		
+		//Normal X+
+		SkyBoxVertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 12
+		SkyBoxVertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 13
+		SkyBoxVertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 14
+		SkyBoxVertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 15
+		
+		//Normal Z-
+		SkyBoxVertex{Vector3{-1.0f, -1.0f, -1.0f}, Vector2{0.0f, 1.0f}}, // 16
+		SkyBoxVertex{Vector3{-1.0f,  1.0f, -1.0f}, Vector2{0.0f, 0.0f}}, // 17
+		SkyBoxVertex{Vector3{ 1.0f,  1.0f, -1.0f}, Vector2{1.0f, 0.0f}}, // 18
+		SkyBoxVertex{Vector3{ 1.0f, -1.0f, -1.0f}, Vector2{1.0f, 1.0f}}, // 19
+		
+		//Normal Z+
+		SkyBoxVertex{Vector3{ 1.0f, -1.0f,  1.0f}, Vector2{0.0f, 1.0f}}, // 20
+		SkyBoxVertex{Vector3{ 1.0f,  1.0f,  1.0f}, Vector2{0.0f, 0.0f}}, // 21
+		SkyBoxVertex{Vector3{-1.0f,  1.0f,  1.0f}, Vector2{1.0f, 0.0f}}, // 22
+		SkyBoxVertex{Vector3{-1.0f, -1.0f,  1.0f}, Vector2{1.0f, 1.0f}}, // 23
 	};
 
 	//// 정점 버퍼 설정
@@ -572,7 +575,7 @@ void DemoGameApp::SetCube()
 
 	// 스카이박스가 사용할 버텍스 세이더 생성 및 스카이박스용 버텍스 셰이더 버퍼와 바인딩
 	ComPtr<ID3DBlob> skyboxVertexShaderBuffer = nullptr;
-	HR_T(CompileShaderFromFile(L"SkyboxVertexShader.hlsl", "main", "vs_4_0", skyboxVertexShaderBuffer.GetAddressOf()));
+	HR_T(CompileShaderFromFile(L"SkyboxVertexShader.hlsl", "main", "vs_5_0", skyboxVertexShaderBuffer.GetAddressOf()));
 	HR_T(m_pDevice->CreateVertexShader(skyboxVertexShaderBuffer->GetBufferPointer(),
 		skyboxVertexShaderBuffer->GetBufferSize(), NULL, m_pSkyBoxVertexShader.GetAddressOf()));
 
@@ -626,7 +629,7 @@ void DemoGameApp::SetCube()
 
 	// 스카이박스 전용 픽셀셰이더 생성
 	ComPtr<ID3DBlob> skyboxPixelShaderBuffer = nullptr;
-	HR_T(CompileShaderFromFile(L"SkyBoxPixelShader.hlsl", "main", "ps_4_0", skyboxPixelShaderBuffer.GetAddressOf()));
+	HR_T(CompileShaderFromFile(L"SkyBoxPixelShader.hlsl", "main", "ps_5_0", skyboxPixelShaderBuffer.GetAddressOf()));
 	HR_T(m_pDevice->CreatePixelShader(
 		skyboxPixelShaderBuffer->GetBufferPointer(),
 		skyboxPixelShaderBuffer->GetBufferSize(), NULL, m_pSkyBoxPixelShader.GetAddressOf()));
@@ -662,7 +665,7 @@ void DemoGameApp::ImGuiBeginDraw()
 
 void DemoGameApp::ImGuiRender()
 {
-	ImGui::Begin("9th Week");
+	ImGui::Begin("IBL");
 	ImGui::SeparatorText("Skinning");
 	ImGui::DragFloat3("Mixamo Position", &m_SkinningModel.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
 	ImGui::DragFloat3("Mixamo Rotation", &m_SkinningModel.m_Rotation.x, 0.01f, -360.0f, 360.0f);
@@ -673,10 +676,10 @@ void DemoGameApp::ImGuiRender()
 	ImGui::DragFloat3("Robot Rotation", &m_Robot.m_Rotation.x, 0.01f, -360.0f, 360.0f);
 	ImGui::DragFloat3("Robot Scale", &m_Robot.m_Scale.x, 0.1f, 0.1f, 100.0f);
 
-	ImGui::SeparatorText("Plain");
-	ImGui::DragFloat3("Plain Position", &m_Plain.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
-	ImGui::DragFloat3("Plain Rotation", &m_Plain.m_Rotation.x, 0.01f, -360.0f, 360.0f);
-	ImGui::DragFloat3("Plain Scale", &m_Plain.m_Scale.x, 0.1f, 0.1f, 100.0f);
+	ImGui::SeparatorText("PBR");
+	ImGui::DragFloat3("PBR Position", &m_PBRModel.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
+	ImGui::DragFloat3("PBR Rotation", &m_PBRModel.m_Rotation.x, 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("PBR Scale", &m_PBRModel.m_Scale.x, 0.1f, 0.1f, 100.0f);
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
@@ -685,19 +688,18 @@ void DemoGameApp::ImGuiRender()
 	ImGui::ColorEdit4("Ambient Color", &m_AmbientColor.x);
 	ImGui::ColorEdit4("SpecularColor", &m_SpecularColor.x);
 
-	ImGui::NewLine();
-	ImGui::SeparatorText("Material");
-	ImGui::ColorEdit4("Diffuse Material", &m_DiffuseMaterial.x);
-	ImGui::ColorEdit4("Ambient Material", &m_AmbientMaterial.x);
-	ImGui::ColorEdit4("Specular Material", &m_SpecularMaterial.x);
-	ImGui::DragFloat("Shininess", &m_Shininess, 0.1f, 0.0f, 10000.0f);
+	//ImGui::NewLine();
+	//ImGui::SeparatorText("Material");
+	//ImGui::ColorEdit4("Diffuse Material", &m_DiffuseMaterial.x);
+	//ImGui::ColorEdit4("Ambient Material", &m_AmbientMaterial.x);
+	//ImGui::ColorEdit4("Specular Material", &m_SpecularMaterial.x);
+	//ImGui::DragFloat("Shininess", &m_Shininess, 0.1f, 0.0f, 10000.0f);
 
-
-	ImGui::NewLine();
-	ImGui::SeparatorText("Camera Setting");
-	ImGui::DragFloat("Near", &m_near, 0.1f, 0.1f, m_far - 0.2f);
-	ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
-	ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
+	//ImGui::NewLine();
+	//ImGui::SeparatorText("Camera Setting");
+	//ImGui::DragFloat("Near", &m_near, 0.1f, 0.1f, m_far - 0.2f);
+	//ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
+	//ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
 	ImGui::End();
 
 	//For Debug Shadow

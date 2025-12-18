@@ -3,6 +3,7 @@
 
 static const float PI = 3.14159265f;
 static const float EPSILON = 1e-6f;
+
 // Fresnel Shlick reflection
 float3 Fresnel_Shlick(in float3 f0 , in float x ) // F
 {
@@ -36,10 +37,11 @@ float4 main(PS_INPUT input) : SV_TARGET
         albedo = DiffuseColor.rgb;
     }
     
-    
     float3x3 TBN = { input.tangent.rgb, input.binormal.rgb, input.norm.rgb };
+    
     //NormalMap
     float3 normal = txNormal.Sample(samLinear, input.Tex).rgb;
+    
     normal = normalize(2.0f * normal - 1.0f);
     
     //Metalic
@@ -53,16 +55,20 @@ float4 main(PS_INPUT input) : SV_TARGET
     float Rough = txRoughness.Sample(samLinear, input.Tex).r;
     if (overridematerial)
     {
-        Rough = max(roughness, 0.01f);
+        Rough = max(roughness, 0.1f);
     }
     
     // vector
     float3 lightVector  = normalize(-vDirectionalLight.xyz);
-    float3 normalVector = normalize(mul(normal, TBN));
+    float3 normalVector = normalize(input.norm);
+    if (hasnormalmap)
+    {
+        normalVector = normalize(mul(normal, TBN));
+    }
     float3 viewVector   = normalize(camerapos - input.worldpos);
     float3 halfvector   = normalize(lightVector + viewVector);
     
-    ////dot product
+    //dot product
     float NdotH = max(dot(normalVector, halfvector), 0);
     float NdotV = max(dot(normalVector, viewVector), 0);
     float LdotH = max(dot(lightVector, halfvector), 0);
@@ -89,8 +95,6 @@ float4 main(PS_INPUT input) : SV_TARGET
     float3 emissive = txEmissive.Sample(samLinear, input.Tex).rgb;
     //ambient += emissive.rgb;
 
-    //float4 finalColor = float4(directLight, 1.0f);
-    //float4 finalColor = float4(directLight, 1.0f);
     float4 finalColor = float4(pow(float3(directLight + emissive/*+ ambient*/), 1.0 / 2.2), 1.0);
     
     finalColor.a = opacity;
@@ -100,6 +104,8 @@ float4 main(PS_INPUT input) : SV_TARGET
     {
         discard;
     }
+    
     //Adapt Gamma Correction
+    //return finalColor;
     return finalColor;
 }

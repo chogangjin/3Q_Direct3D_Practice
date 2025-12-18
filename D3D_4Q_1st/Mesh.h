@@ -80,7 +80,7 @@ public:
 			{
 				deviceContext->PSSetShaderResources(7, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
-			else if (m_Textures[i].type == "texture_                                                            ")
+			else if (m_Textures[i].type == "texture_roughness")
 			{
 				deviceContext->PSSetShaderResources(8, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
@@ -89,7 +89,10 @@ public:
 		
 		deviceContext->DrawIndexed(static_cast<UINT>(m_Indices.size()), 0, 0);						// 인덱스 버퍼에 저장되어있는 인덱스대로 그리기
 		ID3D11ShaderResourceView* nullSRV = nullptr;
-		deviceContext->PSSetShaderResources(5, 1, &nullSRV);
+		for (int i = 0; i < 9; i++)
+		{
+			deviceContext->PSSetShaderResources(i, 1, &nullSRV);
+		}
 	}
 private:
 	ComPtr<ID3D11Buffer> m_pVertexBuffer;

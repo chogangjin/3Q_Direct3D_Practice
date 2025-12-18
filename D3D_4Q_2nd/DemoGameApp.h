@@ -106,6 +106,7 @@ public :
 	SkeletalMesh m_SkinningModel;
 	SkeletalMesh m_Robot;
 	SkeletalMesh m_Plain;
+	SkeletalMesh m_PBRModel;
 
 	bool m_bDebugShadow = true;
 

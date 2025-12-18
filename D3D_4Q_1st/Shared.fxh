@@ -34,6 +34,8 @@ cbuffer ConstantBuffer : register(b0)
     float roughness;
     float metalness;
     bool overridematerial;
+    bool hasnormalmap;
+    
 }
 
 //cbuffer LightBuffer : register(b1)

@@ -11,6 +11,8 @@ public:
 	ModelLoader();
 	~ModelLoader();
 
+	bool m_HasNormalMap = false;
+
 	bool LoadModel(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* devicecontext, std::string filepath);
 	void Draw(ID3D11DeviceContext* devicecontext);
 	void Close();

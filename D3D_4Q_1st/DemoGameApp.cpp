@@ -26,8 +26,6 @@ struct ConstantBuffer
 	Matrix Projection;  // 16
 
 	Vector4 DirectionalLight;
-	//float padding;
-
 	Vector4 DirectionalLightColor;
 	
 	Vector4 DiffuseColor;
@@ -41,10 +39,20 @@ struct ConstantBuffer
 	Vector3 CameraPos;
 	float shininess;
 
-	float roughness;
-	float metalness;
-	bool overridematerial;
-	float padding;
+	float roughness;//4
+	float metalness;//4
+	
+	//4
+	bool overridematerial;//1
+	char padding1; // 1
+	char padding2; // 1
+	char padding3; // 1
+	
+	//4
+	bool hasnormalmap = false;//1
+	char padding4; // 1
+	char padding5; // 1
+	char padding6; // 1
 };
 
 DemoGameApp::DemoGameApp()
@@ -85,9 +93,9 @@ void DemoGameApp::OnUpdate()
 {
 	elapsedTime += TimeSystem::GetInstance()->deltaTime / 1000;
 	
-	DirectX::XMMATRIX translation1 = DirectX::XMMatrixTranslation(m_TranslationTree.x, m_TranslationTree.y, m_TranslationTree.z);
-	DirectX::XMMATRIX rotation1 = DirectX::XMMatrixRotationRollPitchYaw(m_RoataionTree.x, m_RoataionTree.y, m_RoataionTree.z);
-	DirectX::XMMATRIX scale1 = DirectX::XMMatrixScaling(m_ScaleTree.x, m_ScaleTree.y, m_ScaleTree.z);
+	DirectX::XMMATRIX translation1 = DirectX::XMMatrixTranslation(m_TranslationModel.x, m_TranslationModel.y, m_TranslationModel.z);
+	DirectX::XMMATRIX rotation1 = DirectX::XMMatrixRotationRollPitchYaw(m_RotationModel.x, m_RotationModel.y, m_RotationModel.z);
+	DirectX::XMMATRIX scale1 = DirectX::XMMatrixScaling(m_ScaleModel.x, m_ScaleModel.y, m_ScaleModel.z);
 	m_WorldMatrix = scale1 * rotation1 * translation1;
 	
 	m_Camera.GetViewMatrix(m_ViewMatrix);
@@ -108,7 +116,6 @@ void DemoGameApp::Render()
 	
 	// 상수버퍼로 도형 생성
 	ConstantBuffer cbuffer = {};
-	
 	cbuffer.View = XMMatrixTranspose(m_ViewMatrix);
 	cbuffer.Projection = XMMatrixTranspose(m_ProjectionMatrix);
 	cbuffer.DirectionalLight = Vector4{ m_DirectionalLight };
@@ -163,33 +170,41 @@ void DemoGameApp::Render()
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_pDeviceContext->OMSetBlendState(m_pAlphaBlendState.Get(), nullptr , 0xffffffff);
 	
-	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleZelda.x, m_ScaleZelda.y, m_ScaleZelda.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RoataionZelda.x, m_RoataionZelda.y, m_RoataionZelda.z) * DirectX::XMMatrixTranslation(m_TranslationZelda.x, m_TranslationZelda.y, m_TranslationZelda.z);
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleSphere.x, m_ScaleSphere.y, m_ScaleSphere.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RotationSphere.x, m_RotationSphere.y, m_RotationSphere.z) * DirectX::XMMatrixTranslation(m_TranslationSphere.x, m_TranslationSphere.y, m_TranslationSphere.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+	cbuffer.hasnormalmap = m_Sphere.m_HasNormalMap;
+	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
-	m_ZeldaModel.Draw(m_pDeviceContext.Get());
+	m_Sphere.Draw(m_pDeviceContext.Get());
 
-	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleTree.x, m_ScaleTree.y, m_ScaleTree.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RoataionTree.x, m_RoataionTree.y, m_RoataionTree.z) * DirectX::XMMatrixTranslation(m_TranslationTree.x, m_TranslationTree.y, m_TranslationTree.z);
+	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleModel.x, m_ScaleModel.y, m_ScaleModel.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RotationModel.x, m_RotationModel.y, m_RotationModel.z) * DirectX::XMMatrixTranslation(m_TranslationModel.x, m_TranslationModel.y, m_TranslationModel.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+	cbuffer.hasnormalmap = m_PBRModel.m_HasNormalMap;
+	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
-	m_TreeModel.Draw(m_pDeviceContext.Get());
-
-
+	m_PBRModel.Draw(m_pDeviceContext.Get());
 
 	m_WorldMatrix = DirectX::XMMatrixScaling(m_ScaleCharacter.x, m_ScaleCharacter.y, m_ScaleCharacter.z) * DirectX::XMMatrixRotationRollPitchYaw(m_RotationCharacter.x, m_RotationCharacter.y, m_RotationCharacter.z) * XMMatrixTranslation(m_TranslationCharacter.x, m_TranslationCharacter.y, m_TranslationCharacter.z);
 	cbuffer.World = XMMatrixTranspose(m_WorldMatrix);
+	cbuffer.hasnormalmap = m_Sphere.m_HasNormalMap;
+	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->UpdateSubresource(m_pConstantBuffer.Get(), 0, nullptr, &cbuffer, 0, 0);
 	m_Character.Draw(m_pDeviceContext.Get());
 	//m_pDeviceContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
-
-	
 
 	//ImGUI 사용
 	ImGuiBeginDraw();
 	ImGui::Begin("PBR");
 	ImGui::SeparatorText("FBX");
-	ImGui::DragFloat3("FBX Position",  &m_TranslationTree.x, 1.0f, -1000.0f, 1000.0f);
-	ImGui::DragFloat3("FBX Rotation",  &m_RoataionTree.x, 0.01f, -100.0f, 100.0f);
-	ImGui::DragFloat3("FBX Scale",		&m_ScaleTree.x, 0.1f, 0.1f, 100.0f);
+	ImGui::DragFloat3("FBX Position",  &m_TranslationModel.x, 1.0f, -1000.0f, 1000.0f);
+	ImGui::DragFloat3("FBX Rotation",  &m_RotationModel.x, 0.01f, -100.0f, 100.0f);
+	ImGui::DragFloat3("FBX Scale",		&m_ScaleModel.x, 0.1f, 0.1f, 100.0f);
+
+	ImGui::NewLine();
+	ImGui::SeparatorText("Sphere");
+	ImGui::DragFloat3("Sphere Position", &m_TranslationSphere.x, 1.0f, -1000.0f, 1000.0f);
+	ImGui::DragFloat3("Sphere Rotation", &m_RotationSphere.x, 0.01f, -100.0f, 100.0f);
+	ImGui::DragFloat3("Sphere Scale", &m_ScaleSphere.x, 0.1f, 0.1f, 100.0f);
 
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
@@ -477,9 +492,9 @@ void DemoGameApp::SetCube()
 	D3D11_INPUT_ELEMENT_DESC layout[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD",0, DXGI_FORMAT_R32G32_FLOAT,     0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT,   0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT,  0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		{"BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
@@ -560,17 +575,8 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreateBuffer(&cbDesc, nullptr, m_pConstantBuffer.GetAddressOf())); // 버퍼 생성
 	m_pDeviceContext->VSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf()); // 상수버퍼를 Vertex Shader에 연결
 
-	//HR_T(m_pDevice->CreateBuffer(&cbDesc, nullptr, m_pLightBuffer.GetAddressOf()));
-	//m_pDeviceContext->VSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
-	//m_pDeviceContext->PSSetConstantBuffers(1, 1, m_pLightBuffer.GetAddressOf());
-
-	ComPtr<ID3D11Resource> defualttexture = nullptr;
-	//HR_T(DirectX::CreateWICTextureFromFile())
-
 	ComPtr<ID3D11Resource> skycubeTexture = nullptr;
 	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/cubemap.dds", skycubeTexture.GetAddressOf(), m_pSkyBoxShaderResourceView.GetAddressOf()));
-
-	
 
 	// SamplerState 생성
 	D3D11_SAMPLER_DESC samplerStateDesc = {};
@@ -584,8 +590,8 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreateSamplerState(&samplerStateDesc, m_pSamplerState.GetAddressOf()));
 
 	// World Matrix
-	m_ScaleTree = Vector3{ 1,1,1 };
-	m_TranslationTree = Vector3{ 0,0,100 };
+	m_ScaleModel = Vector3{ 1,1,1 };
+	m_TranslationModel = Vector3{ 0,0,100 };
 	m_Shininess = 1000;
 
 	m_Camera.m_MoveSpeed = 500;
@@ -593,11 +599,11 @@ void DemoGameApp::SetCube()
 	//fov 초기화
 	fovWidht = m_Width;
 	fovHeight = m_Height;
-	FieldOfView = 90;
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
 
 	//fbx 파일 로드
-	m_TreeModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/char.fbx");
+	m_PBRModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/char.fbx");
+	m_Sphere.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/sphere.fbx");
 }
 
 bool DemoGameApp::InitImGui()

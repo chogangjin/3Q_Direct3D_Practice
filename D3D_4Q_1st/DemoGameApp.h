@@ -55,13 +55,13 @@ public :
 	UINT m_VertexCount = 0; // 버텍스 개수
 	int m_Indices = 0;
 
-	Vector3 m_ScaleTree{ 1,1,1 };
-	Vector3 m_RoataionTree{ 0,0,0 };
-	Vector3 m_TranslationTree{ 0,0,0 };
+	Vector3 m_ScaleModel{ 1,1,1 };
+	Vector3 m_RotationModel{ 0,0,0 };
+	Vector3 m_TranslationModel{ 0,0,0 };
 	
-	Vector3 m_ScaleZelda{ 1,1,1 };
-	Vector3 m_RoataionZelda{ 0,0,0 };
-	Vector3 m_TranslationZelda{ 0,0,0 };
+	Vector3 m_ScaleSphere{ 1,1,1 };
+	Vector3 m_RotationSphere{ 0,0,0 };
+	Vector3 m_TranslationSphere{ 100,50,100 };
 
 	Vector3 m_ScaleCharacter{ 1,1,1 };
 	Vector3 m_RotationCharacter{ 0,0,0 };
@@ -86,15 +86,16 @@ public :
 
 	float fovWidht;
 	float fovHeight;
-	float FieldOfView;
+	float FieldOfView = 50.0f;
 	float m_near = 0.1f;
 	float m_far = 10000.0f;
 
 	float elapsedTime = 0;
 
-	ModelLoader m_TreeModel;
+	ModelLoader m_PBRModel;
 	ModelLoader m_ZeldaModel;
 	ModelLoader m_Character;
+	ModelLoader m_Sphere;
 
 	bool Initialize() override;
 	void LateInitialize() override;
