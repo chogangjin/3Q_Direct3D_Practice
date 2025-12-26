@@ -172,7 +172,7 @@ void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstan
 
 void SkeletalMesh::CheckAnimationType(const aiScene* pScene)
 {
-	for (int i = 0; i < pScene->mNumMeshes; ++i)
+	for (unsigned int i = 0; i < pScene->mNumMeshes; ++i)
 	{
 		if (pScene->mMeshes[i]->mNumBones>0)
 		{

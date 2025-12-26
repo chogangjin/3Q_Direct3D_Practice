@@ -141,7 +141,7 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
 			if (FAILED(hr))
 			{
-				std::runtime_error("Texture couldn't be loaded");
+				throw std::runtime_error("Texture couldn't be loaded");
 			}
 			textures.push_back(t);
 		}
@@ -190,7 +190,7 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
 			if (FAILED(hr))
 			{
-				std::runtime_error("Texture couldn't be loaded");
+				throw std::runtime_error("Texture couldn't be loaded");
 			}
 			textures.push_back(t);
 		}
@@ -217,7 +217,7 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
 			if (FAILED(hr))
 			{
-				std::runtime_error("Texture couldn't be loaded");
+				throw std::runtime_error("Texture couldn't be loaded");
 			}
 			textures.push_back(t);
 		}
@@ -238,7 +238,7 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene)
 			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
 			if (FAILED(hr))
 			{
-				std::runtime_error("Texture couldn't be loaded");
+				throw std::runtime_error("Texture couldn't be loaded");
 			}
 			textures.push_back(t);
 		}
@@ -298,7 +298,7 @@ std::vector<Texture> ModelLoader::loadMaterialTextures(aiMaterial* material, aiT
 					hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, wfilename.c_str(), nullptr, texture.m_pTextureSRV.GetAddressOf());
 					if (FAILED(hr))
 					{
-						std::runtime_error("Texture couldn't be loaded");
+						throw std::runtime_error("Texture couldn't be loaded");
 					}
 				}
 			}
@@ -340,7 +340,7 @@ ID3D11ShaderResourceView* ModelLoader::loadEmbeddedTexture(const aiTexture* embe
 		hr = m_pDevice->CreateTexture2D(&desc, &subresourcedata, &texture2D);
 		if (FAILED(hr))
 		{
-			std::runtime_error("CreatedTextture2D Failed!");
+			throw std::runtime_error("CreatedTextture2D Failed!");
 			//MessageBox(hwnd, "CreatedTextture2D Failed!", "Error!", MB_ICONERROR | MB_OK);
 		}
 

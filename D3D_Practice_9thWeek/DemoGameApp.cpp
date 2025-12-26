@@ -486,7 +486,7 @@ bool DemoGameApp::InitScene()
 	//fbx 파일 로드
 	m_SkinningModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
 	m_Robot.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
-	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plain.fbx");
+	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plane.fbx");
 	
 	m_Plain.m_Scale *= 10;
 

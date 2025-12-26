@@ -1,11 +1,18 @@
 Texture2D txDiffuse : register(t0);
-TextureCube SkyBox : register(t1);
+TextureCube txSkyBox : register(t1);
 Texture2D txNormal : register(t2);
 Texture2D txSpecular : register(t3);
 Texture2D txAmbient : register(t4);
 Texture2D txEmissive : register(t5);
 Texture2D txOpacity : register(t6);
 Texture2D txShadow : register(t7);
+Texture2D txMetalic : register(t8);
+Texture2D txRoughness : register(t9);
+TextureCube txEnvironmentMap : register(t10);
+TextureCube txIrradianceMap : register(t11);
+TextureCube txPrefilteredMap : register(t12);
+Texture2D txLookUpTexture : register(t13);
+
 SamplerState samLinear : register(s0);
 
 
@@ -31,18 +38,20 @@ cbuffer ConstantBuffer : register(b0)
     
     uint IsRigid;
     uint RefBoneIndex;
+    float Roughness;
+    float Metalness;
+    
+    bool OverrideMaterial;
+    bool HasNormalMap;
+    //uint MaxMipLevel;
     float2 padding;
 }
 
 cbuffer ShadowConstantBuffer : register(b2)
 {
-    //matrix View;
-    //matrix Projection;
     matrix ShadowView;
     matrix ShadowProjection;
 }
-
-//#define VERTEX_SKINNING
 
 cbuffer ModelMatrix : register(b3)
 {
@@ -61,10 +70,8 @@ struct VS_INPUT
     float3 normal : NORMAL;
     float3 tangent : TANGENT;
     float3 binormal : BINORMAL;
-//#ifdef VERTEX_SKINNING
     int4 BlendIndices : BLENDINDICES;
     float4 BlendWeights : BLENDWEIGHT;
-//#endif
 };
 
 struct PS_INPUT

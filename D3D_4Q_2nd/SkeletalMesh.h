@@ -5,7 +5,6 @@
 #include <assimp/postprocess.h>
 
 using namespace Microsoft::WRL;
-//class ConstantBuffer;
 class SkeletalMesh
 {
 public:
@@ -19,7 +18,7 @@ public:
 	void Draw(ConstantBuffer* pCBuffer, ID3D11Buffer* pConstantBuffer);
 	void DrawAnimation(ConstantBuffer* pCBuffer, ID3D11Buffer* pConstantBuffer, ID3D11Buffer* pBonePoseBuffer, ID3D11Buffer* pBoneOffsetBuffer);
 	void CheckAnimationType(const aiScene* pScene);
-	void Close();
+	//void Close();
 	std::vector<Mesh>& GetMeshes() { return m_Meshes; }
 	std::vector<Mesh> m_Meshes;
 	std::vector<Bone> m_Skeleton;
@@ -31,9 +30,9 @@ public:
 	Vector3 m_Rotation{ 0,0,0 };
 	Vector3 m_Translation{ 0,0,0 };
 	
-
 	bool m_IsRigid = true;
 	bool m_HasAnimation = false;
+	bool m_HasNormalmap = false;
 private:
 	HWND hwnd;
 	ID3D11Device* m_pDevice;

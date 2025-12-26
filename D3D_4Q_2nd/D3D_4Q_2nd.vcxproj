@@ -139,18 +139,22 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="D3D_Practice.cpp" />
     <ClCompile Include="DemoGameApp.cpp" />
+    <ClCompile Include="IBL.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="SkeletalMesh.cpp" />
+    <ClCompile Include="StaticFBX.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="D3D_Practice.h" />
     <ClInclude Include="DemoGameApp.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="IBL.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="SkeletalMesh.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SkyBoxVertex.h" />
+    <ClInclude Include="StaticFBX.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>

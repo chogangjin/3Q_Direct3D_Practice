@@ -5,7 +5,7 @@ PS_INPUT main(VS_INPUT input )
     PS_INPUT output = (PS_INPUT)0;
     float4 pos = input.pos;
     float4x4 mworld = mul(BoneOffset[RefBoneIndex], World);
-    if (IsRigid == false)
+    if (!IsRigid)
     {
         float4x4 OffsetPose[4];
         OffsetPose[0] = mul(BoneOffset[input.BlendIndices.x], BonePose[input.BlendIndices.x]);

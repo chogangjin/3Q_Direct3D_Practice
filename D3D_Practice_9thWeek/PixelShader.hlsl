@@ -61,7 +61,6 @@ float4 main(PS_INPUT input) : SV_TARGET
     // 최종 출력
     float4 finalColor = 0;
     finalColor = saturate(directLight + Ambient);
-    //finalColor.a *= opacity;
     finalColor.a = 1;
     return finalColor;
 }

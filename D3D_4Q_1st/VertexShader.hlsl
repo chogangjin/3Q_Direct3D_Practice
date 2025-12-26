@@ -3,7 +3,7 @@ PS_INPUT main( VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT)0;
     output.pos = mul(input.pos, World);
-    output.worldpos = output.pos;
+    output.worldpos = (float3) output.pos;
     output.pos = mul(output.pos, View);
     output.pos = mul(output.pos, Projection);
     output.Tex = input.Tex;

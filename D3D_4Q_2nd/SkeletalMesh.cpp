@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <DirectXTex.h>
 #include "../DirectX_3D_Lilbrary/TimeSystem.h"
+#include "StaticFBX.h"
 
 SkeletalMesh::SkeletalMesh() :
 	m_pDevice(nullptr), m_pDeviceContext(nullptr), m_Meshes(), filepath(),
@@ -27,7 +28,6 @@ bool SkeletalMesh::LoadModel(HWND hwnd, ID3D11Device* device, ID3D11DeviceContex
 		aiProcess_LimitBoneWeights | // 본의 영향을 받는 정점의 최대 개수를 4개로 제한
 		aiProcess_ConvertToLeftHanded |// 왼손 좌표계 
 		aiProcessPreset_TargetRealtime_Fast;
-		//aiProcess_PreTransformVertices; // 노드의 변환행렬을 미리 적용 -> StaticMesh로 처리할때만 사용 -> animation에서 미사용
 	
 	const aiScene* pScene = importer.ReadFile(_filepath, importFlags); // 파일 정보를 aiscene에 담음
 	
@@ -94,39 +94,39 @@ void SkeletalMesh::Update(float deltatime)
 	{
 		m_AnimationProgressTime += deltatime;
 		m_AnimationProgressTime = (float)fmod(m_AnimationProgressTime, m_Animations[m_CurrentAnimationIndex].m_Duration);
-	}
-
-	std::cout << m_AnimationProgressTime << std::endl;
-	for (auto& bone : m_Skeleton)
-	{
-		if (bone.m_pBoneAnimation != nullptr)
+		std::cout << m_AnimationProgressTime << std::endl;
+		for (auto& bone : m_Skeleton)
 		{
-			Vector3 position;
-			Quaternion rotation;
-			Vector3 scale;
+			if (bone.m_pBoneAnimation != nullptr)
+			{
+				Vector3 position;
+				Quaternion rotation;
+				Vector3 scale;
 
-			// 델타타임에 따른 트랜스폼 값 보간
-			bone.m_pBoneAnimation->Evaluate(m_AnimationProgressTime, position, rotation, scale);
-			bone.localMatrix = Matrix::CreateScale(scale) * Matrix::CreateFromQuaternion(rotation)  * Matrix::CreateTranslation(position);
-		}
-		
-		if (bone.m_Index ==0 )
-		{
-			bone.modelMatrix = bone.localMatrix;
-		}
-		else if (bone.m_ParentIndex != -1 && bone.m_Index != 0)
-		{
-			bone.modelMatrix = bone.localMatrix * m_Skeleton[bone.m_ParentIndex].modelMatrix;
-		}
+				// 델타타임에 따른 트랜스폼 값 보간
+				bone.m_pBoneAnimation->Evaluate(m_AnimationProgressTime, position, rotation, scale);
+				bone.localMatrix = Matrix::CreateScale(scale) * Matrix::CreateFromQuaternion(rotation)  * Matrix::CreateTranslation(position);
+			}
+			
+			if (bone.m_Index ==0 )
+			{
+				bone.modelMatrix = bone.localMatrix;
+			}
+			else if (bone.m_ParentIndex != -1 && bone.m_Index != 0)
+			{
+				bone.modelMatrix = bone.localMatrix * m_Skeleton[bone.m_ParentIndex].modelMatrix;
+			}
 
-		//GPU에 전달할 정보
-		m_SkeletonPose.modelMatrix[bone.m_Index] = (bone.modelMatrix).Transpose();
+			//GPU에 전달할 정보
+			m_SkeletonPose.modelMatrix[bone.m_Index] = (bone.modelMatrix).Transpose();
+		}
 	}
 }
 
 void SkeletalMesh::Draw(ConstantBuffer* pCBuffer, ID3D11Buffer* pConstantBuffer)
 {
 	pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
+	pCBuffer->HasNormalMap = m_HasNormalmap;
 	m_pDeviceContext->UpdateSubresource(pConstantBuffer, 0, nullptr, pCBuffer, 0, 0);
 	for (size_t i = 0; i < m_Meshes.size(); ++i)
 	{
@@ -136,9 +136,10 @@ void SkeletalMesh::Draw(ConstantBuffer* pCBuffer, ID3D11Buffer* pConstantBuffer)
 
 void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstantBuffer, ID3D11Buffer* pBonePoseBuffer, ID3D11Buffer* pBoneOffsetBuffer)
 {
-	pCBuffer->IsRigid = m_IsRigid;
 	m_WorldMatrix = DirectX::XMMatrixScaling(m_Scale.x, m_Scale.y, m_Scale.z) * DirectX::XMMatrixRotationRollPitchYaw(m_Rotation.x, m_Rotation.y, m_Rotation.z) * DirectX::XMMatrixTranslation(m_Translation.x, m_Translation.y, m_Translation.z);
 	pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
+	pCBuffer->IsRigid = m_IsRigid;
+	pCBuffer->HasNormalMap = m_HasNormalmap;
 	
 	for (int i = 0; i < m_Meshes.size(); i++)
 	{
@@ -150,7 +151,38 @@ void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstan
 		for (UINT j = 0; j < m_Meshes[i].m_Textures.size(); j++)
 		{
 			Texture t = m_Meshes[i].m_Textures[j];
-			m_pDeviceContext->PSSetShaderResources(0, 1, t.m_pTextureSRV.GetAddressOf());
+			if (t.type == "texture_diffuse" || t.type == "texture_basecolor")
+			{
+				m_pDeviceContext->PSSetShaderResources(0, 1, t.m_pTextureSRV.GetAddressOf()); // SRV 벡터의 첫번째 주소를 전달해서 쭉 읽도록
+			}
+			else if (t.type == "texture_normal")
+			{
+				m_pDeviceContext->PSSetShaderResources(2, 1, t.m_pTextureSRV.GetAddressOf()); // SRV 벡터의 첫번째 주소를 전달해서 쭉 읽도록
+			}
+			else if (t.type == "texture_specular")
+			{
+				m_pDeviceContext->PSSetShaderResources(3, 1, t.m_pTextureSRV.GetAddressOf());
+			}
+			else if (t.type == "texture_ambient")
+			{
+				m_pDeviceContext->PSSetShaderResources(4, 1, t.m_pTextureSRV.GetAddressOf());
+			}
+			else if (t.type == "texture_emissive")
+			{
+				m_pDeviceContext->PSSetShaderResources(5, 1, t.m_pTextureSRV.GetAddressOf());
+			}
+			else if (t.type == "texture_opacity")
+			{
+				m_pDeviceContext->PSSetShaderResources(6, 1, t.m_pTextureSRV.GetAddressOf());
+			}
+			else if (t.type == "texture_metalic")
+			{
+				m_pDeviceContext->PSSetShaderResources(8, 1, t.m_pTextureSRV.GetAddressOf());
+			}
+			else if (t.type == "texture_roughness")
+			{
+				m_pDeviceContext->PSSetShaderResources(9, 1, t.m_pTextureSRV.GetAddressOf());
+			}
 		}
 
 		pCBuffer->World = XMMatrixTranspose(m_WorldMatrix);
@@ -168,6 +200,13 @@ void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstan
 		m_pDeviceContext->UpdateSubresource(pBoneOffsetBuffer, 0, nullptr, &m_SkeletonInfo.m_BoneOffsetMatrices, 0, 0);
 
 		m_pDeviceContext->DrawIndexed(static_cast<UINT>(m_Meshes[i].m_Indices.size()), 0, 0);
+
+		ID3D11ShaderResourceView* nullSRV = nullptr;
+		for (UINT i = 0; i < 9; i++)
+		{
+			if (i == 7 ) { continue; }
+			m_pDeviceContext->PSSetShaderResources(i, 1, &nullSRV);
+		}
 	}
 }
 
@@ -183,10 +222,10 @@ void SkeletalMesh::CheckAnimationType(const aiScene* pScene)
 	}
 }
 
-void SkeletalMesh::Close()
-{
-
-}
+//void SkeletalMesh::Close()
+//{
+//
+//}
 
 void SkeletalMesh::ProcessNode(aiNode* node, const aiScene* scene)
 {
@@ -308,85 +347,92 @@ Mesh SkeletalMesh::ProcessMesh(aiMesh* pMesh, const aiScene* scene)
 
 	if (pMesh->mMaterialIndex >= 0) // 머티리얼이 존재한다면
 	{
-		aiMaterial* pMaterial = scene->mMaterials[pMesh->mMaterialIndex];
-		std::string aistr = pMaterial->GetName().C_Str();
-		aiString astr;
-		aiColor3D diffuseColor(0, 0, 0);
-
-		// 머티리얼 타입별 적용, 실패하면 nullptr 반환
-		if (pMaterial->GetTexture(aiTextureType_NORMALS, 0, &astr) == AI_SUCCESS)
+		for(UINT i = 0; i < scene->mNumMaterials; ++i)
 		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_NORMALS); i++)
+			//aiMaterial* pMaterial = scene->mMaterials[pMesh->mMaterialIndex];
+			aiMaterial* pMaterial = scene->mMaterials[i];
+			std::string aistr = pMaterial->GetName().C_Str();
+			aiString astr(aistr);
+
+			// 머티리얼 타입별 적용, 실패하면 nullptr 반환
+			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &astr) == AI_SUCCESS)
+			{
+				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_DIFFUSE, "texture_diffuse", scene);
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
+			}
+			else
+			{
+				HRESULT hr;
+				Texture t = { "texture_diffuse","../Resources/Default_Material.png", nullptr };
+				std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+				hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+				if (FAILED(hr))
+				{
+					throw std::runtime_error("Texture couldn't be loaded");
+				}
+				mesh.m_Textures.push_back(t);
+			}
+			if (pMaterial->GetTexture(aiTextureType_NORMALS, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_NORMALS, "texture_normal", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
-		}
-		if (pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &astr) == AI_SUCCESS)
-		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_AMBIENT); i++)
+			if (pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_AMBIENT, "texture_ambient", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
-		}
-
-		if (pMaterial->GetTexture(aiTextureType_SPECULAR, 0, &astr) == AI_SUCCESS)
-		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SPECULAR); i++)
+			if (pMaterial->GetTexture(aiTextureType_SPECULAR, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_SPECULAR, "texture_specular", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
-		}
-
-		if (pMaterial->GetTexture(aiTextureType_OPACITY, 0, &astr) == AI_SUCCESS)
-		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_OPACITY); i++)
+			if (pMaterial->GetTexture(aiTextureType_OPACITY, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_OPACITY, "texture_opacity", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
-		}
-		else
-		{
-			HRESULT hr;
-			Texture t = { "texture_opacity","../Resources/Default_Material.png", nullptr };
-			std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
-			hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
-			if (FAILED(hr))
+			else
 			{
-				throw std::runtime_error("Texture couldn't be loaded");
+				HRESULT hr;
+				Texture t = { "texture_opacity","../Resources/Default_Material.png", nullptr };
+				std::wstring filepath = std::wstring{ t.path.begin(), t.path.end() };
+				hr = DirectX::CreateWICTextureFromFile(m_pDevice, m_pDeviceContext, filepath.c_str(), nullptr, t.m_pTextureSRV.GetAddressOf());
+				if (FAILED(hr))
+				{
+					throw std::runtime_error("Texture couldn't be loaded");
+				}
+				mesh.m_Textures.push_back(t);
 			}
-			textures.push_back(t);
-		}
 
-		if (pMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &astr) == AI_SUCCESS)
-		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_EMISSIVE); i++)
+			if (pMaterial->GetTexture(aiTextureType_EMISSIVE, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_EMISSIVE, "texture_emissive", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
-		}
 
-
-		if (pMaterial->GetTexture(aiTextureType_METALNESS, 0, &astr) == AI_SUCCESS)
-		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_METALNESS); i++)
+			if (pMaterial->GetTexture(aiTextureType_METALNESS, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_METALNESS, "texture_metalness", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
-		}
 
-		if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &astr) == AI_SUCCESS)
-		{
-			for (unsigned int i = 0; i < pMaterial->GetTextureCount(aiTextureType_SHININESS); i++)
+			if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &astr) == AI_SUCCESS)
 			{
 				std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_SHININESS, "texture_roughness", scene);
-				textures.insert(textures.end(), Maps.begin(), Maps.end());
+				mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
 			}
+
+			//if (pMaterial->GetTexture(aiTextureType_BASE_COLOR, 0, &astr) == AI_SUCCESS)
+			//{
+			//	std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_BASE_COLOR, "texture_basecolor", scene);
+			//	mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
+			//}
+			//if (pMaterial->GetTexture(aiTextureType_AMBIENT, 0, &astr) == AI_SUCCESS)
+			//{
+			//	std::vector<Texture> Maps = this->LoadMaterialTextures(pMaterial, aiTextureType_AMBIENT, "texture_basecolor", scene);
+			//	mesh.m_Textures.insert(mesh.m_Textures.end(), Maps.begin(), Maps.end());
+			//}
 		}
 	}
 	mesh.CreateVertexBuffer(m_pDevice);

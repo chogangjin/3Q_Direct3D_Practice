@@ -8,7 +8,9 @@
 #include "imgui_impl_dx11.h"
 
 #include "SkeletalMesh.h"
+#include "StaticFBX.h"
 #include "Mesh.h"
+#include "IBL.h"
 
 using namespace Microsoft::WRL;
 using namespace DirectX::SimpleMath;
@@ -95,7 +97,7 @@ public :
 	Vector4	m_LightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	float	m_Shininess = 1.0f;
 
-	float fovWidht=0;
+	float fovWidht = 0;
 	float fovHeight = 0;
 	float FieldOfView = 0;
 	float m_near = 0.1f;
@@ -103,12 +105,19 @@ public :
 
 	float elapsedTime = 0;
 
+	IBL m_IBL;
+
 	SkeletalMesh m_SkinningModel;
 	SkeletalMesh m_Robot;
-	SkeletalMesh m_Plain;
-	SkeletalMesh m_PBRModel;
+	StaticFBX m_Plane;
+	StaticFBX m_Sphere;
+	StaticFBX m_PBRModel;
 
 	bool m_bDebugShadow = true;
+
+	float   m_Roughness = 0.0f;
+	float   m_Metalness = 0.0f;
+	bool	m_OverrideMaterial = false;
 
 	bool Initialize() override;
 	void LateInitialize() override;

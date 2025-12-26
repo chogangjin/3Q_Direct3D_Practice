@@ -6,7 +6,7 @@ PS_INPUT main( VS_INPUT input)
     float4 pos = input.pos;
     
     // v * offset * pose 중에서 offset과 pose를 먼저 계산
-    if (IsRigid == false)
+    if (!IsRigid)
     {
         float4x4 OffsetPose[4];
         OffsetPose[0] = mul(BoneOffset[input.BlendIndices.x], BonePose[input.BlendIndices.x]);

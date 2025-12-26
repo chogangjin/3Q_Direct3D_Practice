@@ -597,8 +597,8 @@ void DemoGameApp::SetCube()
 	m_Camera.m_MoveSpeed = 500;
 
 	//fov 초기화
-	fovWidht = m_Width;
-	fovHeight = m_Height;
+	fovWidht = (float)m_Width;
+	fovHeight = (float)m_Height;
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(FieldOfView), (float)m_Width / m_Height, m_near, m_far);
 
 	//fbx 파일 로드

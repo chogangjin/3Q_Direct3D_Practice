@@ -56,7 +56,9 @@ void DemoGameApp::OnUpdate()
 
 	m_SkinningModel.Update(TimeSystem::GetInstance()->deltaTime);
 	m_Robot.Update(TimeSystem::GetInstance()->deltaTime);
-	m_Plain.Update(TimeSystem::GetInstance()->deltaTime);
+	m_PBRModel.Update();
+	m_Sphere.Update();
+	m_Plane.Update();
 
 	m_Camera.GetViewMatrix(m_ViewMatrix);
 	m_ProjectionMatrix = DirectX::XMMatrixPerspectiveFovLH(
@@ -64,8 +66,6 @@ void DemoGameApp::OnUpdate()
 		(float)m_Width / m_Height,
 		m_near,
 		m_far);
-
-
 
 	// 그림자 Depth Only Pass Camera 설정
 	if (m_bDebugShadow)
@@ -79,6 +79,7 @@ void DemoGameApp::OnUpdate()
 	m_ShadowLookAt = m_Camera.GetCameraPosition() + m_Camera.GetForward() * m_ShadowForwardDistanceFromCamera;
 	m_ShadowPos = m_ShadowLookAt + (-m_DirectionalLight * m_ShadowUpDistanceFromLookAt);
 	m_ShadowView = XMMatrixLookAtLH(m_ShadowPos, m_ShadowLookAt, Vector3{ 0.0f, 1.0f, 0.0f });
+	m_IBL.SetIBLMaterial();
 }
 
 LRESULT CALLBACK DemoGameApp::WndProc(HWND hWnd, UINT message, WPARAM wParameter, LPARAM lParameter)
@@ -107,6 +108,10 @@ void DemoGameApp::Render()
 	cbuffer.SpecularMaterial = m_SpecularMaterial;
 	cbuffer.CameraPos = m_Camera.GetCameraPosition();
 	cbuffer.shininess = m_Shininess;
+	cbuffer.Roughness = m_Roughness;
+	cbuffer.Metalness = m_Metalness;
+	cbuffer.OverrideMaterial = m_OverrideMaterial;
+	//cbuffer.MaxMiplevel = m_IBL.m_MaxMipLevel;
 
 	TransformViewProjection shadowcbuffer = {};
 	shadowcbuffer.ShadowView = XMMatrixTranspose(m_ShadowView);
@@ -135,7 +140,8 @@ void DemoGameApp::Render()
 	m_SkinningModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_PBRModel.Draw(&cbuffer, m_pConstantBuffer.Get());
-	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
+	m_Sphere.Draw(&cbuffer, m_pConstantBuffer.Get());
+	m_Plane.Draw(&cbuffer, m_pConstantBuffer.Get());
 
 	// 화면 해당 색으로 칠하기
 	// 렌더타겟을 최종 출력 파이프라인에 바인딩
@@ -155,6 +161,8 @@ void DemoGameApp::Render()
 	m_pDeviceContext->PSSetShader(m_pSkyBoxPixelShader.Get(), nullptr, 0);
 	m_pDeviceContext->PSSetConstantBuffers(0, 1, m_pConstantBuffer.GetAddressOf());
 	m_pDeviceContext->PSSetShaderResources(1, 1, m_pSkyBoxShaderResourceView.GetAddressOf());
+	m_IBL.SetIBLSRV();
+	
 
 	//SkyBox가 카메라 행렬을 따라감
 	cbuffer.World = XMMatrixTranspose(DirectX::SimpleMath::Matrix::CreateTranslation(m_Camera.GetCameraPosition()));
@@ -175,7 +183,8 @@ void DemoGameApp::Render()
 	m_SkinningModel.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_Robot.DrawAnimation(&cbuffer, m_pConstantBuffer.Get(), m_pBonePoseBuffer.Get(), m_pBoneOffsetBuffer.Get());
 	m_PBRModel.Draw(&cbuffer, m_pConstantBuffer.Get());
-	m_Plain.Draw(&cbuffer, m_pConstantBuffer.Get());
+	m_Sphere.Draw(&cbuffer, m_pConstantBuffer.Get());
+	m_Plane.Draw(&cbuffer, m_pConstantBuffer.Get());
 
 	ID3D11ShaderResourceView* nullView = nullptr;
 	m_pDeviceContext->PSSetShaderResources(7, 1, &nullView);
@@ -193,7 +202,6 @@ bool DemoGameApp::InitD3D()
 	HRESULT hr = 0;
 
 	//D3D Device 생성
-
 	UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef _DEBUG
 	creationFlags = D3D11_CREATE_DEVICE_DEBUG;
@@ -460,7 +468,7 @@ bool DemoGameApp::InitScene()
 	m_pDeviceContext->VSSetConstantBuffers(2, 1, m_pShadowBuffer.GetAddressOf());
 
 	ComPtr<ID3D11Resource> skycubeTexture = nullptr;
-	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/cubemap.dds", skycubeTexture.GetAddressOf(), m_pSkyBoxShaderResourceView.GetAddressOf()));
+	HR_T(DirectX::CreateDDSTextureFromFile(m_pDevice.Get(), L"../Resources/IBL/OutputEnvHDR.dds", skycubeTexture.GetAddressOf(), m_pSkyBoxShaderResourceView.GetAddressOf()));
 
 	// SamplerState 생성
 	D3D11_SAMPLER_DESC samplerStateDesc = {};
@@ -488,15 +496,20 @@ bool DemoGameApp::InitScene()
 	//fbx 파일 로드
 	m_SkinningModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/SkinningTest.fbx");
 	m_Robot.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/BoxHuman.fbx");
-	m_Plain.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plain.fbx");
 	m_PBRModel.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/char.fbx");
+	m_Sphere.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/sphere.fbx");
+	m_Plane.LoadModel(m_handleWindow, m_pDevice.Get(), m_pDeviceContext.Get(), "../Resources/Plane.fbx");
 
-	m_Plain.m_Scale *= 10;
+	m_Plane.m_Scale *= 10;
+
+	m_Sphere.m_Translation = { 100, 50, 0 };
+	m_PBRModel.m_Translation = { 200, 30, 0 };
+
+	m_IBL.SetDeviceandDeviceContext(m_pDevice.Get(), m_pDeviceContext.Get());
+	m_IBL.LoadIBLMaterialFromFilePath(L"Output");
 
 	//스카이큐브 설정
 	SetCube();
-
-	
 
 	return true;
 }
@@ -597,23 +610,23 @@ void DemoGameApp::SetCube()
 	unsigned int indices[] =
 	{
 		// 일반 큐브
-			//윗변
-			0,1,2, 0,2,3,
+		//윗변
+		0,1,2, 0,2,3,
 
-			//밑변
-			4,5,6, 4,6,7,
+		//밑변
+		4,5,6, 4,6,7,
 
-			//왼쪽 변
-			8,9,10,	8,10,11,
+		//왼쪽 변
+		8,9,10,	8,10,11,
 
-			//오른쪽 변
-			12,13,14, 12,14,15,
+		//오른쪽 변
+		12,13,14, 12,14,15,
 
-			//정면
-			16,17,18, 16,18,19,
+		//정면
+		16,17,18, 16,18,19,
 
-			//뒷면
-			20,21,22, 20,22,23,
+		//뒷면
+		20,21,22, 20,22,23,
 	};
 	m_Indices = ARRAYSIZE(indices);
 
@@ -633,7 +646,7 @@ void DemoGameApp::SetCube()
 	HR_T(m_pDevice->CreatePixelShader(
 		skyboxPixelShaderBuffer->GetBufferPointer(),
 		skyboxPixelShaderBuffer->GetBufferSize(), NULL, m_pSkyBoxPixelShader.GetAddressOf()));
-	}
+}
 
 //Imgui 설정
 bool DemoGameApp::InitImGui()
@@ -676,30 +689,32 @@ void DemoGameApp::ImGuiRender()
 	ImGui::DragFloat3("Robot Rotation", &m_Robot.m_Rotation.x, 0.01f, -360.0f, 360.0f);
 	ImGui::DragFloat3("Robot Scale", &m_Robot.m_Scale.x, 0.1f, 0.1f, 100.0f);
 
-	ImGui::SeparatorText("PBR");
+	ImGui::SeparatorText("PBR Model");
 	ImGui::DragFloat3("PBR Position", &m_PBRModel.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
 	ImGui::DragFloat3("PBR Rotation", &m_PBRModel.m_Rotation.x, 0.01f, -360.0f, 360.0f);
 	ImGui::DragFloat3("PBR Scale", &m_PBRModel.m_Scale.x, 0.1f, 0.1f, 100.0f);
 
+	ImGui::SeparatorText("Sphere");
+	ImGui::DragFloat3("Sphere Position", &m_Sphere.m_Translation.x, 1.0f, -10000.0f, 10000.0f);
+	ImGui::DragFloat3("Sphere Rotation", &m_Sphere.m_Rotation.x, 0.01f, -360.0f, 360.0f);
+	ImGui::DragFloat3("Sphere Scale", &m_Sphere.m_Scale.x, 0.1f, 0.1f, 100.0f);
+
 	ImGui::NewLine();
 	ImGui::SeparatorText("Light");
 	ImGui::DragFloat3("Directional Light", &m_DirectionalLight.x, 0.01f, -1.0f, 1.0f);
-	ImGui::ColorEdit4("Diffuse Color", &m_LightColor.x);
-	ImGui::ColorEdit4("Ambient Color", &m_AmbientColor.x);
-	ImGui::ColorEdit4("SpecularColor", &m_SpecularColor.x);
+	ImGui::Checkbox("ChangeIBL", &m_IBL.m_IsChangeIBL);
 
-	//ImGui::NewLine();
-	//ImGui::SeparatorText("Material");
-	//ImGui::ColorEdit4("Diffuse Material", &m_DiffuseMaterial.x);
-	//ImGui::ColorEdit4("Ambient Material", &m_AmbientMaterial.x);
-	//ImGui::ColorEdit4("Specular Material", &m_SpecularMaterial.x);
-	//ImGui::DragFloat("Shininess", &m_Shininess, 0.1f, 0.0f, 10000.0f);
+	ImGui::NewLine();
+	ImGui::SeparatorText("Camera Setting");
+	ImGui::DragFloat("Near", &m_near, 0.1f, 0.1f, m_far - 0.2f);
+	ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
+	ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
 
-	//ImGui::NewLine();
-	//ImGui::SeparatorText("Camera Setting");
-	//ImGui::DragFloat("Near", &m_near, 0.1f, 0.1f, m_far - 0.2f);
-	//ImGui::DragFloat("Far", &m_far, 0.1f, m_near + 0.2f, 1000.0f);
-	//ImGui::DragFloat("FoV", &FieldOfView, 0.1f, 0.1f, 360.0f);
+	ImGui::SeparatorText("PBR Setting");
+	ImGui::DragFloat("Roughness", &m_Roughness, 0.01f, 0.0f, 1.0f);
+	ImGui::DragFloat("Metalness", &m_Metalness, 0.01f, 0.0f, 1.0f);
+	ImGui::Checkbox("Override Material", &m_OverrideMaterial);
+
 	ImGui::End();
 
 	//For Debug Shadow

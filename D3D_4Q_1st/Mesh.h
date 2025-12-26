@@ -84,7 +84,6 @@ public:
 			{
 				deviceContext->PSSetShaderResources(8, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
-			
 		}
 		
 		deviceContext->DrawIndexed(static_cast<UINT>(m_Indices.size()), 0, 0);						// 인덱스 버퍼에 저장되어있는 인덱스대로 그리기

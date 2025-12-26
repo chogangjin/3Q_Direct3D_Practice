@@ -28,8 +28,17 @@ struct ConstantBuffer
 	Vector3 CameraPos;
 	float shininess;
 
-	bool IsRigid;
+	bool IsRigid; 
+	char BoolPadding1[3];
 	UINT RefBoneIndex;
+	float Roughness;
+	float Metalness;
+
+	bool OverrideMaterial; // 4
+	char BoolPadding2[3];
+	bool HasNormalMap = false; // 4
+	char BoolPadding3[3];
+	//UINT MaxMiplevel = 0;
 	Vector2 Padding;
 };
 struct BoneMatrixContainer
@@ -201,37 +210,49 @@ public:
 		deviceContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 		// 인덱스 버퍼 입력 조립
-		for (UINT i = 0; i < m_Textures.size(); i++)
+		for (size_t i = 0; i < m_Textures.size(); i++)
 		{
-			// diffuse
 			if (m_Textures[i].type == "texture_diffuse")
 			{
 				deviceContext->PSSetShaderResources(0, 1, m_Textures[i].m_pTextureSRV.GetAddressOf()); // SRV 벡터의 첫번째 주소를 전달해서 쭉 읽도록
 			}
-
-			// specular
-			if (m_Textures[i].type == "texture_specular")
+			else if (m_Textures[i].type == "texture_normal")
+			{
+				deviceContext->PSSetShaderResources(2, 1, m_Textures[i].m_pTextureSRV.GetAddressOf()); // SRV 벡터의 첫번째 주소를 전달해서 쭉 읽도록
+			}
+			else if (m_Textures[i].type == "texture_specular")
 			{
 				deviceContext->PSSetShaderResources(3, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
-
-			// ambient
-			if (m_Textures[i].type == "texture_ambient")
+			else if (m_Textures[i].type == "texture_ambient")
 			{
 				deviceContext->PSSetShaderResources(4, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
-
-			// emissive
-			if (m_Textures[i].type == "texture_emissive")
+			else if (m_Textures[i].type == "texture_emissive")
 			{
 				deviceContext->PSSetShaderResources(5, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
 			}
-			
-			// opacity
-			deviceContext->PSSetShaderResources(6, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
-			
+			else if (m_Textures[i].type == "texture_opacity")
+			{
+				deviceContext->PSSetShaderResources(6, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
+			}
+			else if (m_Textures[i].type == "texture_metalic")
+			{
+				deviceContext->PSSetShaderResources(8, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
+			}
+			else if (m_Textures[i].type == "texture_roughness")
+			{
+				deviceContext->PSSetShaderResources(9, 1, m_Textures[i].m_pTextureSRV.GetAddressOf());
+			}
 		}
 		deviceContext->DrawIndexed(static_cast<UINT>(m_Indices.size()), 0, 0);						// 인덱스 버퍼에 저장되어있는 인덱스대로 그리기
+
+		ID3D11ShaderResourceView* nullSRV = nullptr;
+		for (UINT i = 0; i < 9; i++)
+		{
+			if (i == 7) { continue; }
+			deviceContext->PSSetShaderResources(i, 1, &nullSRV);
+		}
 	}
 
 public:
