@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D_4Q_1st", "D3D_4Q_1st\D3
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D_4Q_2nd", "D3D_4Q_2nd\D3D_4Q_2nd.vcxproj", "{C446F702-0530-4288-BFDB-ADD8B1133AFE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D3D_4Q_3rd", "D3D_4Q_3rd\D3D_4Q_3rd.vcxproj", "{5D54C268-B888-4E2C-AD2B-38B246503F89}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -103,6 +105,14 @@ Global
 		{C446F702-0530-4288-BFDB-ADD8B1133AFE}.Release|x64.Build.0 = Release|x64
 		{C446F702-0530-4288-BFDB-ADD8B1133AFE}.Release|x86.ActiveCfg = Release|Win32
 		{C446F702-0530-4288-BFDB-ADD8B1133AFE}.Release|x86.Build.0 = Release|Win32
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Debug|x64.ActiveCfg = Debug|x64
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Debug|x64.Build.0 = Debug|x64
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Debug|x86.ActiveCfg = Debug|Win32
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Debug|x86.Build.0 = Debug|Win32
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Release|x64.ActiveCfg = Release|x64
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Release|x64.Build.0 = Release|x64
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Release|x86.ActiveCfg = Release|Win32
+		{5D54C268-B888-4E2C-AD2B-38B246503F89}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

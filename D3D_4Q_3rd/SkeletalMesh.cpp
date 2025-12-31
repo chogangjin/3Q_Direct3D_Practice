@@ -26,7 +26,7 @@ bool SkeletalMesh::LoadModel(HWND hwnd, ID3D11Device* device, ID3D11DeviceContex
 		aiProcess_GenUVCoords | // UV 좌표 생성
 		aiProcess_CalcTangentSpace | // 탄젠트 벡터 생성
 		aiProcess_LimitBoneWeights | // 본의 영향을 받는 정점의 최대 개수를 4개로 제한
-		aiProcess_ConvertToLeftHanded |// 왼손 좌표계 
+		aiProcess_ConvertToLeftHanded | // 왼손 좌표계 
 		aiProcessPreset_TargetRealtime_Fast;
 	
 	const aiScene* pScene = importer.ReadFile(_filepath, importFlags); // 파일 정보를 aiscene에 담음
@@ -140,6 +140,7 @@ void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstan
 	pCBuffer->IsRigid = m_IsRigid;
 	pCBuffer->HasNormalMap = m_HasNormalmap;
 	
+	
 	for (int i = 0; i < m_Meshes.size(); i++)
 	{
 		UINT stride = sizeof(Vertex);
@@ -203,6 +204,7 @@ void SkeletalMesh::DrawAnimation(ConstantBuffer* pCBuffer,ID3D11Buffer* pConstan
 		ID3D11ShaderResourceView* nullSRV = nullptr;
 		for (UINT i = 0; i < 9; i++)
 		{
+			//그림자 index가 7번임, 밖에서 해제
 			if (i == 7 ) { continue; }
 			m_pDeviceContext->PSSetShaderResources(i, 1, &nullSRV);
 		}

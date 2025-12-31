@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{aa8a024c-9dd1-4549-9c91-81977c0b8ef0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Shadow">
+      <UniqueIdentifier>{2e2b0547-bfa4-4dbc-8732-8c36fccfe2d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\SkyBox">
+      <UniqueIdentifier>{935b2be3-4919-4e7f-ac99-8adfe517ddd6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\HDR">
+      <UniqueIdentifier>{8f7e3cc8-bc0f-43cc-b5ca-65e71922c8f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Basic">
+      <UniqueIdentifier>{af486822-06ba-4c2c-b00f-66cec51c5da4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Animation.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D_Practice.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DemoGameApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="IBL.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SkeletalMesh.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticFBX.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="HDR_Quad.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Animation.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D_Practice.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DemoGameApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="IBL.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SkeletalMesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyBoxVertex.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticFBX.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="HDR_Quad.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="PixelShader.hlsl">
+      <Filter>Shaders\Basic</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shaders\Basic</Filter>
+    </FxCompile>
+    <FxCompile Include="ShadowPixelShader.hlsl">
+      <Filter>Shaders\Shadow</Filter>
+    </FxCompile>
+    <FxCompile Include="ShadowVertexShader.hlsl">
+      <Filter>Shaders\Shadow</Filter>
+    </FxCompile>
+    <FxCompile Include="SkyBoxPixelShader.hlsl">
+      <Filter>Shaders\SkyBox</Filter>
+    </FxCompile>
+    <FxCompile Include="SkyboxVertexShader.hlsl">
+      <Filter>Shaders\SkyBox</Filter>
+    </FxCompile>
+    <FxCompile Include="HDRPixelShader.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="QuadVertexShader.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+    <FxCompile Include="LDRPixelShader.hlsl">
+      <Filter>Shaders\HDR</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shared.fxh">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
