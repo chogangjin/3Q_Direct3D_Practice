@@ -1,0 +1,184 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{519ae7db-9095-4f20-bf89-7d36bda30709}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Basic">
+      <UniqueIdentifier>{ab193cb9-f789-4b3e-b99a-43492413e7e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Shadow">
+      <UniqueIdentifier>{c63c56f8-6546-4d9e-a11b-ffc988d609b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\SkyBox">
+      <UniqueIdentifier>{194a2c84-0eab-4b9e-84a8-8d9189cf7993}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\ToneMapping">
+      <UniqueIdentifier>{b5dc93ca-1300-48ae-b14f-45427ffe2a38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Light">
+      <UniqueIdentifier>{b1e5d75f-d252-4145-96b4-4b7fa4f717e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Light\DirectionalLight">
+      <UniqueIdentifier>{18e6758f-7c62-4001-8668-c73cf1350ece}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Light\PointLight">
+      <UniqueIdentifier>{2a8accb0-e384-4e54-8a71-4cd9f7acf98f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\GBuffer">
+      <UniqueIdentifier>{91b885a5-d3d4-4cf3-9107-adcf7eed2a21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Unused">
+      <UniqueIdentifier>{1d271a7f-3801-4152-bb83-071cb75831bb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Animation.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D_Practice.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DemoGameApp.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="HDR_Quad.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="IBL.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SkeletalMesh.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticFBX.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="GBuffer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="LightBuffer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceBase.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyBoxVertex.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Animation.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D_Practice.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DemoGameApp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="HDR_Quad.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="IBL.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SkeletalMesh.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyBoxVertex.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticFBX.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffers.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="GBuffer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="LightBuffer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceBase.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="SkyBoxPixelShader.hlsl">
+      <Filter>Shaders\SkyBox</Filter>
+    </FxCompile>
+    <FxCompile Include="ShadowPixelShader.hlsl">
+      <Filter>Shaders\Shadow</Filter>
+    </FxCompile>
+    <FxCompile Include="ShadowVertexShader.hlsl">
+      <Filter>Shaders\Shadow</Filter>
+    </FxCompile>
+    <FxCompile Include="LDRPixelShader.hlsl">
+      <Filter>Shaders\ToneMapping</Filter>
+    </FxCompile>
+    <FxCompile Include="HDRPixelShader.hlsl">
+      <Filter>Shaders\ToneMapping</Filter>
+    </FxCompile>
+    <FxCompile Include="QuadVertexShader.hlsl">
+      <Filter>Shaders\ToneMapping</Filter>
+    </FxCompile>
+    <FxCompile Include="SkyboxVertexShader.hlsl">
+      <Filter>Shaders\SkyBox</Filter>
+    </FxCompile>
+    <FxCompile Include="DirectionalLightPS.hlsl">
+      <Filter>Shaders\Light\DirectionalLight</Filter>
+    </FxCompile>
+    <FxCompile Include="PointLIghtPS.hlsl">
+      <Filter>Shaders\Light\PointLight</Filter>
+    </FxCompile>
+    <FxCompile Include="PointLightVS.hlsl">
+      <Filter>Shaders\Light\PointLight</Filter>
+    </FxCompile>
+    <FxCompile Include="GBufferPixelShader.hlsl">
+      <Filter>Shaders\GBuffer</Filter>
+    </FxCompile>
+    <FxCompile Include="GBufferVertexShader.hlsl">
+      <Filter>Shaders\GBuffer</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shaders\Unused</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShader.hlsl">
+      <Filter>Shaders\Unused</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shared.fxh">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
